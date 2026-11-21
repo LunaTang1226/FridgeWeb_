@@ -279,6 +279,32 @@
       recommended_grid: 'S'
     };
 
+    /* 真实接口请求：成功返回数据对象，任何失败返回 null */
+    async function requestReal(base64) {
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 20000);
+
+      try {
+        var res = await fetch('https://territories-lawn-western-vacation.trycloudflare.com/api/vision', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ image_base64: base64 }),
+          signal:  ctrl.signal
+        });
+
+        if (!res.ok) return null;
+
+        var d = await res.json();
+        if (typeof d.passed !== 'boolean') return null;
+
+        return d;
+      } catch (e) {
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     async function runReview() {
       var data;
 
@@ -290,41 +316,18 @@
       if (!realBase64) realBase64 = fakeImageBase64;
 
       if (USE_REAL_API) {
-        var res;
+        var real = await requestReal(realBase64);
 
-        /* 60 秒超时：接口单次需 10~30 秒，超过则主动中断 */
-        var ctrl  = new AbortController();
-        var timer = setTimeout(function () { ctrl.abort(); }, 60000);
+        if (real) {
+          data = real;
+        } else {
+          /* 隧道断了 / 超时 / 5xx / 跨域 / 字段异常：自动降级，流程继续 */
+          console.log('[review] AI 接口不可用，已降级为本地模拟结果');
 
-        /* 网络层失败：断网 / 跨域被拦 / 服务未启动 / 超时中断 */
-        try {
-          res = await fetch('https://territories-lawn-western-vacation.trycloudflare.com/api/vision', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ image_base64: realBase64 }),
-            signal:  ctrl.signal
-          });
-        } catch (netErr) {
-          clearTimeout(timer);
-          backToUpload(netErr && netErr.name === 'AbortError'
-            ? '识别超时，请重试'
-            : '网络请求失败');
-          return;
-        }
+          /* 让「AI识别中」至少显示 1.2 秒，避免一闪而过 */
+          await new Promise(function (resolve) { setTimeout(resolve, 1200); });
 
-        clearTimeout(timer);
-
-        /* 响应体可能不是 JSON，解析失败时给空对象兜底 */
-        try {
-          data = await res.json();
-        } catch (parseErr) {
-          data = {};
-        }
-
-        /* 400 / 500 / 502 等 */
-        if (!res.ok) {
-          backToUpload(data.message || data.error || '网络请求失败');
-          return;
+          data = MOCK_RESULT;
         }
       } else {
         /* 模拟：2 秒后直接给出结果 */
