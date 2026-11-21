@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>使用中</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:   #EBEDF1;
+    --brand:#205285;
+    --btn:  #B2D2EA;
+    --ink:  #030405;
+    --spin: #1296DB;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 标题 ============ */
+  .title {
+    position: absolute;
+    top: 69px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 计时卡片 ============ */
+  .panel {
+    position: absolute;
+    left: 34.5px;
+    top: 130px;
+    width: 306px;
+    height: 210px;
+    background: #FFFFFF;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 22px;
+  }
+
+  .panel__grid {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #8A8A8A;
+    letter-spacing: 0.5px;
+  }
+
+  .panel__time {
+    margin-top: 14px;
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+  }
+
+  .panel__time-label {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+  }
+
+  .panel__fee {
+    margin-top: 18px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--brand);
+  }
+
+  .panel__fee-note {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #A9AEB6;
+  }
+
+  /* ============ 提示文字 ============ */
+  .tip {
+    position: absolute;
+    top: 362px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #5B6068;
+  }
+
+  /* ============ 更换格口 ============ */
+  .change-link {
+    position: absolute;
+    top: 400px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--brand);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .change-link:active { opacity: .7; }
+
+  /* 管理员终止提示 */
+  .alert {
+    position: absolute;
+    left: 34.5px;
+    top: 436px;
+    width: 306px;
+    padding: 10px 14px;
+    border: 1px solid #E8B4AE;
+    border-radius: 7px;
+    background: #FDECEA;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #C0392B;
+    text-align: center;
+  }
+
+  /* ============ 再次开锁（取物） ============ */
+  .reopen-link {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 124px;                     /* 主按钮上方 16px */
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--brand);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .reopen-link:active { opacity: .7; }
+
+  /* ============ 底部按钮 ============ */
+  .main-btn {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .18s ease;
+  }
+
+  .main-btn:hover  { background: #A6C9E4; }
+  .main-btn:active { background: #9BC0DE; }
+
+  /* ============ 开锁弹窗 ============ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 71px;
+    z-index: 10;
+  }
+
+  .toast__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+
+  .spinner {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin-top: 12px;
+    animation: spinner-rotate 1s steps(8) infinite;
+  }
+
+  .spinner span {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 4px;
+    height: 12px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--spin);
+    transform-origin: 2px 12px;
+  }
+
+  .spinner span:nth-child(1) { transform: rotate(0deg);   opacity: 1;   }
+  .spinner span:nth-child(2) { transform: rotate(45deg);  opacity: .88; }
+  .spinner span:nth-child(3) { transform: rotate(90deg);  opacity: .76; }
+  .spinner span:nth-child(4) { transform: rotate(135deg); opacity: .64; }
+  .spinner span:nth-child(5) { transform: rotate(180deg); opacity: .52; }
+  .spinner span:nth-child(6) { transform: rotate(225deg); opacity: .40; }
+  .spinner span:nth-child(7) { transform: rotate(270deg); opacity: .28; }
+  .spinner span:nth-child(8) { transform: rotate(315deg); opacity: .16; }
+
+  @keyframes spinner-rotate { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="title">使用中</h1>
+
+    <section class="panel">
+      <p class="panel__grid">格口 <span id="gridNo">C01</span></p>
+      <p class="panel__time" id="clock">00:00:00</p>
+      <p class="panel__time-label">已使用时长</p>
+      <p class="panel__fee" id="fee">¥ 0.00</p>
+      <p class="panel__fee-note">按 0.05 元/小时计费</p>
+    </section>
+
+    <p class="tip" id="tip">存放物品后请关闭柜门</p>
+
+    <a class="change-link" href="book.html">格口不够大？格口脏污或损坏？更换格口</a>
+
+    <div class="alert" id="killedAlert" hidden>该订单已被管理员终止</div>
+
+    <!-- 取物品时重新开锁 -->
+    <a class="reopen-link" id="reopenLink">再次开锁，取走物品</a>
+
+    <a class="main-btn" href="settle.html">结束使用</a>
+
+    <div class="toast" id="toast" hidden>
+      <p class="toast__text" id="toastText">正在开锁...</p>
+      <div class="spinner" id="toastSpinner" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+  </main>
+
+<script>
+  (function () {
+
+    var gridNo = localStorage.getItem('selectedGrid') || 'C01';
+    document.getElementById('gridNo').textContent = gridNo;
+
+    
+
+    /* ---------------- 计时 ---------------- */
+    var KEY = 'sf_start_time';
+    var start = Number(localStorage.getItem(KEY));
+
+    if (!start) {
+      start = Date.now();
+      try { localStorage.setItem(KEY, start); } catch (e) {}
+    }
+
+    var clockEl = document.getElementById('clock');
+    var feeEl   = document.getElementById('fee');
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+    function tick() {
+      var ms = Date.now() - start;
+      if (ms < 0) ms = 0;
+
+      var total = Math.floor(ms / 1000);
+      clockEl.textContent =
+        pad(Math.floor(total / 3600)) + ':' +
+        pad(Math.floor((total % 3600) / 60)) + ':' +
+        pad(total % 60);
+
+      feeEl.textContent = '¥ ' + ((ms / 3600000) * 0.05).toFixed(2);
+    }
+
+    /* ---------------- 管理员强行终止：停表 → 归档 → 返回首页 ---------------- */
+    var terminated = null;
+    try { terminated = JSON.parse(localStorage.getItem('sf_terminated') || 'null'); } catch (e) {}
+
+    var myOrderNo = localStorage.getItem('sf_order_no');
+
+    var killed = !!(terminated && (
+      (myOrderNo && terminated.no === myOrderNo) ||
+      (!myOrderNo && terminated.code === gridNo)
+    ));
+
+    if (killed) {
+      var now = Date.now();
+
+      var killedAlert = document.getElementById('killedAlert');
+      killedAlert.hidden = false;
+      killedAlert.textContent = '该订单已被管理员终止，3 秒后进入结算';
+
+      clockEl.textContent = '--:--:--';
+      feeEl.textContent = '¥ 0.00';
+
+      /* 冻结结束时间：已使用的时长照常计费，由结算页读取 */
+      try { localStorage.setItem('sf_end_time', now); } catch (e) {}
+
+      var endBtn = document.querySelector('.main-btn');
+      if (endBtn) {
+        endBtn.style.pointerEvents = 'none';
+        endBtn.style.opacity = '.5';
+      }
+
+      var reopenBtn = document.getElementById('reopenLink');
+      if (reopenBtn) reopenBtn.style.pointerEvents = 'none';
+
+      setTimeout(function () {
+        window.location.href = 'settle.html';
+      }, 3000);
+
+    } else {
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    /* ---------------- 再次开锁（取物品） ----------------
+       复用同一格口，不新建订单、不跳页，开锁后提示取物。   */
+    var reopenLink = document.getElementById('reopenLink');
+    var toast      = document.getElementById('toast');
+    var toastText  = document.getElementById('toastText');
+    var spinner    = document.getElementById('toastSpinner');
+    var tip        = document.getElementById('tip');
+    var unlocking  = false;
+
+    reopenLink.addEventListener('click', function () {
+      if (unlocking) return;
+      unlocking = true;
+
+      toast.hidden = false;
+      toastText.textContent = '正在开锁...';
+      spinner.hidden = false;
+
+      setTimeout(function () {
+        toastText.textContent = '开锁成功';
+        spinner.hidden = true;
+        tip.textContent = '取走物品后请关闭柜门';
+
+        setTimeout(function () {
+          toast.hidden = true;
+          unlocking = false;
+        }, 900);
+      }, 1600);
+    });
+
+  })();
+</script>
+
+</body>
+</html>

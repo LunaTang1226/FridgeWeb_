@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>订单确认</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:     #EBEDF1;
+    --card:   #FFFFFF;
+    --btn:    #B2D2EA;
+    --ink:    #030405;
+    --line:   #E5E5E5;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 标题 ============ */
+  .title {
+    position: absolute;
+    top: 69px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 金额卡片 306 × 97 ============ */
+  .amount-card {
+    position: absolute;
+    left: 34.5px;                      /* (375 - 306) / 2 */
+    top: 114px;                        /* 标题底 89 + 25 */
+    width: 306px;
+    height: 97px;
+    background: var(--card);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;               /* 水平居中 */
+    padding-top: 16px;                 /* 金额距卡片上边 16px */
+  }
+
+  .amount {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  .amount__note {
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+  }
+
+  /* ============ 分割线（两张卡片之间） ============ */
+  .divider {
+    position: absolute;
+    left: 34.5px;
+    top: 227px;                        /* 金额卡底 211 + 16 */
+    width: 306px;
+    height: 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* ============ 信息卡片 306 × 111 ============ */
+  .info-card {
+    position: absolute;
+    left: 34.5px;
+    top: 243px;                        /* 分割线 227 + 16 */
+    width: 306px;
+    height: 111px;
+    background: var(--card);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    padding: 0 20px;
+  }
+
+  .info-card p {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #000000;
+  }
+
+  /* ============ 底部按钮 ============ */
+  .pay-btn {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+
+  .pay-btn:hover  { background: #A6C9E4; }
+  .pay-btn:active { background: #9BC0DE; }
+
+  /* ============ 支付成功弹窗（无转圈） ============ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 71px;                 /* 文字与上一页弹窗同一位置 */
+    z-index: 10;
+  }
+
+  .toast__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="title">订单确认</h1>
+
+    <section class="amount-card">
+      <p class="amount">¥ 20.00</p>
+      <p class="amount__note">使用押金，使用结束后原路退回</p>
+    </section>
+
+    <hr class="divider">
+
+    <section class="info-card">
+      <p>柜口位置：西四六楼</p>
+      <p>柜口编号：<span id="gridNo">C01</span></p>
+      <p>支付方式：微信支付</p>
+    </section>
+
+    <button class="pay-btn" type="button" id="payBtn">立即支付</button>
+
+    <div class="toast" id="paidToast" hidden>
+      <p class="toast__text">支付成功！</p>
+    </div>
+
+  </main>
+
+<script>
+  (function () {
+
+    /* ---------------- 读取上一页选中的格口编号 ---------------- */
+    var myGrid = localStorage.getItem('selectedGrid') || 'C01';
+    document.getElementById('gridNo').textContent = myGrid;
+
+    /* ---------------- 立即支付 ---------------- */
+    var payBtn    = document.getElementById('payBtn');
+    var paidToast = document.getElementById('paidToast');
+
+    payBtn.addEventListener('click', function () {
+      payBtn.disabled = true;          /* 防止连点重复下单 */
+
+      paidToast.hidden = false;
+
+      /* 按要求延时 200ms 后进入开锁页 */
+      setTimeout(function () {
+        window.location.href = 'unlock.html';
+      }, 2000);
+    });
+
+  })();
+</script>
+
+</body>
+</html>

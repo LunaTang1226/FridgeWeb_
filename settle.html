@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>费用结算</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:   #EBEDF1;
+    --brand:#205285;
+    --btn:  #B2D2EA;
+    --ink:  #030405;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  .title {
+    position: absolute;
+    top: 69px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* 被管理员终止的提示 */
+  .killed-tip {
+    position: absolute;
+    top: 100px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #C0392B;
+  }
+
+  /* ============ 结算卡片 ============ */
+  .panel {
+    position: absolute;
+    left: 34.5px;
+    top: 130px;
+    width: 306px;
+    height: 210px;
+    background: #FFFFFF;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 26px;
+  }
+
+  .panel__label {
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+  }
+
+  .panel__time {
+    margin-top: 10px;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+  }
+
+  .panel__divider {
+    width: 262px;
+    height: 0;
+    margin: 20px 0 0;
+    border: 0;
+    border-top: 1px solid #EDEEF0;
+  }
+
+  .panel__fee-label {
+    margin-top: 18px;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+  }
+
+  .panel__fee {
+    margin-top: 8px;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 押金说明 ============ */
+  .deposit {
+    position: absolute;
+    top: 366px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #5B6068;
+  }
+
+  .deposit strong {
+    font-weight: 700;
+    color: #000000;
+  }
+
+  /* ============ 支付方式 ============ */
+  .pay-way {
+    position: absolute;
+    left: 34.5px;
+    top: 430px;
+    width: 306px;
+    height: 56px;
+    background: #FFFFFF;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 14px;
+    color: #000000;
+  }
+
+  .pay-way span:last-child {
+    color: #5B6068;
+    font-size: 13px;
+  }
+
+  /* ============ 底部按钮 ============ */
+  .main-btn {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+
+  .main-btn:hover  { background: #A6C9E4; }
+  .main-btn:active { background: #9BC0DE; }
+
+  /* ============ 支付成功弹窗 ============ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 66px;
+    z-index: 10;
+  }
+
+  .toast__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+
+  .toast__note {
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+  }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="title">费用结算</h1>
+
+    <p class="killed-tip" id="killedTip" hidden>该订单已被管理员终止，费用按实际使用时长结算</p>
+
+    <section class="panel">
+      <p class="panel__label">本次使用时长</p>
+      <p class="panel__time" id="duration">00:00:00</p>
+
+      <hr class="panel__divider">
+
+      <p class="panel__fee-label">使用费用</p>
+      <p class="panel__fee" id="fee">¥ 0.00</p>
+    </section>
+
+    <p class="deposit" id="depositNote">
+      押金 <strong>¥ 20.00</strong> 将在确认无损坏后<br>7 个工作日内原路退回
+    </p>
+
+    <section class="pay-way">
+      <span>支付方式</span>
+      <span>微信支付</span>
+    </section>
+
+    <button class="main-btn" type="button" id="payBtn">确认支付</button>
+
+    <div class="toast" id="toast" hidden>
+      <p class="toast__text">支付成功！</p>
+      <p class="toast__note">清理格口后请关闭柜门</p>
+    </div>
+
+  </main>
+
+<script>
+  (function () {
+
+    var start = Number(localStorage.getItem('sf_start_time'));
+    if (!start || start > Date.now()) start = Date.now();
+
+    /* 进入结算页即冻结计时：刷新或停留都不再累加 */
+    var end = Number(localStorage.getItem('sf_end_time'));
+    if (!end || end < start || end > Date.now()) {
+      end = Date.now();
+      try { localStorage.setItem('sf_end_time', end); } catch (e) {}
+    }
+
+    var ms = end - start;
+
+    /* 被管理员终止的订单，归档状态记为“已终止” */
+    var orderState = '已完成';
+    try {
+      if (localStorage.getItem('sf_terminated')) orderState = '已终止';
+    } catch (e) {}
+
+    if (orderState === '已终止') {
+      var tipEl = document.getElementById('killedTip');
+      if (tipEl) tipEl.hidden = false;
+    }
+
+    /* 存放超过 72 小时：押金不予退还 */
+    if (ms > 72 * 3600 * 1000) {
+      document.getElementById('depositNote').innerHTML =
+        '已存放超过 72 小时，押金 <strong>¥ 20.00</strong> 不予退还';
+    }
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+    var total = Math.floor(ms / 1000);
+    document.getElementById('duration').textContent =
+      pad(Math.floor(total / 3600)) + ':' +
+      pad(Math.floor((total % 3600) / 60)) + ':' +
+      pad(total % 60);
+
+    document.getElementById('fee').textContent =
+      '¥ ' + ((ms / 3600000) * 0.05).toFixed(2);
+
+    /* 支付成功后停留 2 秒回首页，并清空本次计时 */
+    var payBtn = document.getElementById('payBtn');
+    var toast  = document.getElementById('toast');
+
+    payBtn.addEventListener('click', function () {
+      payBtn.disabled = true;
+      toast.hidden = false;
+
+      setTimeout(function () {
+        /* 先把这一单归档成历史记录 */
+        try {
+          var list = JSON.parse(localStorage.getItem('sf_orders') || '[]');
+          if (!Array.isArray(list)) list = [];
+
+          list.unshift({
+            code:  localStorage.getItem('selectedGrid') || '',
+            no:    localStorage.getItem('sf_order_no') || '',
+            start: start,
+            end:   end,
+            secs:  Math.floor(ms / 1000),
+            fee:   Number(((ms / 3600000) * 0.05).toFixed(2)),
+            state: orderState
+          });
+
+          localStorage.setItem('sf_orders', JSON.stringify(list.slice(0, 50)));
+        } catch (e) {}
+
+        /* 再清掉“进行中”的状态，下一次是全新一单 */
+        try {
+          localStorage.removeItem('sf_start_time');
+          localStorage.removeItem('sf_end_time');
+          localStorage.removeItem('sf_order_no');
+          localStorage.removeItem('selectedGrid');
+          localStorage.removeItem('sf_terminated');
+        } catch (e) {}
+        window.location.href = 'index.html';
+      }, 2000);
+    });
+
+  })();
+</script>
+
+</body>
+</html>

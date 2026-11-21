@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>上传照片</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:    #EBEDF1;   /* 与首页 / 手册页完全一致 */
+    --blue:  #3466CA;   /* 虚线框描边 + 相机图标 */
+    --btn:   #B2D2EA;   /* 主按钮底色 */
+    --ink:   #030405;
+    --line:  #E8EAEE;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;               /* 仅用于衬托手机画面，不参与设计稿 */
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 顶部提示文案：距上 182px，水平居中 ============ */
+  .tip {
+    position: absolute;
+    top: 182px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 虚线框：距文案底部 20px ============ */
+  .dropzone {
+    position: absolute;
+    top: 222px;                        /* 182 + 20(文案高) + 20 */
+    left: 46px;                        /* (375 - 283) / 2 */
+    width: 283px;
+    height: 198px;
+    border: 1px dashed var(--blue);    /* 描边居中、线宽 1px、直角无圆角 */
+    background: transparent;           /* 填充与页面底色一致 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dropzone svg {
+    width: 38px;
+    height: 31px;
+    display: block;
+    stroke: var(--blue);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  /* ============ 底部主按钮：265 × 48，距底 60px ============ */
+  .upload-btn {
+    position: absolute;
+    left: 55px;                        /* (375 - 265) / 2 */
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;               /* 严格水平垂直居中 */
+    justify-content: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+
+  .upload-btn:hover  { background: #A6C9E4; }
+  .upload-btn:active { background: #9BC0DE; }
+
+  /* ============ 遮罩 ============ */
+  .mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);    /* 半透明黑底 */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .28s ease;
+    z-index: 20;
+  }
+
+  /* ============ 底部弹窗：375 × 211，上圆角 20，下圆角 0 ============ */
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 211px;
+    background: #FFFFFF;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;                  /* 裁掉整体上移后多出的顶部空白 */
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);       /* 默认藏在页面下方 */
+    pointer-events: none;
+    transition: transform .30s cubic-bezier(.32, .72, 0, 1);
+    z-index: 30;
+  }
+
+  /* 内容整体上移 21.333px：使「拍照」文字顶部距弹窗顶部 13px */
+  .sheet__body {
+    display: flex;
+    flex-direction: column;
+    margin-top: -21.333px;
+  }
+
+  /* 每个选项：文字底部到分割线 15px；项高 70.333px，内部间距保持不变 */
+  .sheet__item {
+    flex: 0 0 70.333px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 15px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+  }
+
+  /* 打开状态 */
+  body.sheet-open .mask  { opacity: 1; pointer-events: auto; }
+  body.sheet-open .sheet { transform: translateY(0); pointer-events: auto; }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <!-- 提示文案 -->
+    <p class="tip">点击上传物品照片，AI将自动审核</p>
+
+    <!-- 虚线框 + 相机图标 -->
+    <div class="dropzone" role="img" aria-label="待上传物品照片">
+      <svg viewBox="0 0 38 31" aria-hidden="true">
+        <rect x="1.5" y="7.5" width="35" height="22" rx="3" />
+        <path d="M12.5 7.5 15 2.5h8l2.5 5" />
+        <circle cx="19" cy="18.5" r="7" />
+      </svg>
+    </div>
+
+    <!-- 底部主按钮 -->
+    <button class="upload-btn" type="button" id="uploadBtn">上传照片</button>
+
+    <!-- 遮罩 -->
+    <div class="mask" id="mask"></div>
+
+    <!-- 底部弹窗 -->
+    <div class="sheet" id="sheet">
+      <div class="sheet__body">
+        <a class="sheet__item" href="#" id="takePhoto">拍照</a>
+        <a class="sheet__item" href="#" id="pickAlbum">选择相册中的图片</a>
+        <a class="sheet__item" href="#" id="cancelBtn">取消</a>
+      </div>
+    </div>
+
+    <input type="file" id="photoFile" accept="image/*" hidden>
+
+  </main>
+
+<script>
+  (function () {
+    var mask      = document.getElementById('mask');
+    var uploadBtn = document.getElementById('uploadBtn');
+    var cancelBtn = document.getElementById('cancelBtn');
+
+    function openSheet()  { document.body.classList.add('sheet-open'); }
+    function closeSheet() { document.body.classList.remove('sheet-open'); }
+
+    uploadBtn.addEventListener('click', openSheet);
+
+    cancelBtn.addEventListener('click', function (e) {
+      e.preventDefault();      // 阻止 href="#" 跳到页面顶部
+      closeSheet();
+    });
+
+    mask.addEventListener('click', closeSheet);
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeSheet();
+    });
+
+    /* ---------------- 拍照 / 相册：真实选图 ---------------- */
+    var photoFile = document.getElementById('photoFile');
+
+    function pickPhoto() {
+      closeSheet();
+      photoFile.click();
+    }
+
+    document.getElementById('takePhoto').addEventListener('click', function (e) {
+      e.preventDefault();
+      pickPhoto();
+    });
+
+    document.getElementById('pickAlbum').addEventListener('click', function (e) {
+      e.preventDefault();
+      pickPhoto();
+    });
+
+    /* 压缩：长边 1024、jpeg 质量 0.8 */
+    function compressImage(file, maxSide, quality) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () {
+          var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          var canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    photoFile.addEventListener('change', function () {
+      var file = photoFile.files && photoFile.files[0];
+      if (!file) return;
+
+      compressImage(file, 1024, 0.8).then(function (dataUrl) {
+        try { localStorage.setItem('sf_last_photo', dataUrl); } catch (e) {}
+        window.location.href = 'review.html';
+      }).catch(function () {
+        alert('图片处理失败，请重新选择');
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>AI 审核</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:    #EBEDF1;   /* 与前几页完全一致 */
+    --btn:   #B2D2EA;
+    --ink:   #030405;
+    --spin:  #1296DB;   /* 转圈图标 */
+    --ok:    #44B31F;   /* 通过 */
+    --no:    #E23C04;   /* 未通过 */
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;               /* 仅用于衬托手机画面，不参与设计稿 */
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* 三个状态共用同一层，互相覆盖 */
+  .state {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* ============ 状态一：加载中（246 × 159 白弹窗，页面正中） ============ */
+  .loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;               /* 水平居中 */
+    padding-top: 71px;                 /* 文字顶距弹窗上边 71px */
+  }
+
+  .loading__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+
+  /* 8 条放射线的经典转圈，位于文字下方 12px */
+  .spinner {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin-top: 12px;
+    animation: spinner-rotate 1s steps(8) infinite;
+  }
+
+  .spinner span {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 4px;
+    height: 12px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--spin);
+    transform-origin: 2px 12px;        /* 绕容器中心旋转 */
+  }
+
+  .spinner span:nth-child(1) { transform: rotate(0deg);   opacity: 1;   }
+  .spinner span:nth-child(2) { transform: rotate(45deg);  opacity: .88; }
+  .spinner span:nth-child(3) { transform: rotate(90deg);  opacity: .76; }
+  .spinner span:nth-child(4) { transform: rotate(135deg); opacity: .64; }
+  .spinner span:nth-child(5) { transform: rotate(180deg); opacity: .52; }
+  .spinner span:nth-child(6) { transform: rotate(225deg); opacity: .40; }
+  .spinner span:nth-child(7) { transform: rotate(270deg); opacity: .28; }
+  .spinner span:nth-child(8) { transform: rotate(315deg); opacity: .16; }
+
+  @keyframes spinner-rotate { to { transform: rotate(360deg); } }
+
+  /* ============ 状态二 / 三：结果页 ============ */
+
+  /* 结论文字：图片框上方，距框顶部 15px，20px 加粗居中 */
+  .verdict {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 619px;                     /* 底边固定在图片框上方 15px（826-619=207） */
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* 图片展示区：与 upload.html 的相机虚线框完全同尺寸 */
+  .shot {
+    position: absolute;
+    left: 46px;                        /* (375 - 283) / 2 */
+    top: 222px;
+    width: 283px;
+    height: 198px;
+    overflow: hidden;
+    background: #DDE1E6;               /* 图片未加载时的占位底色 */
+  }
+
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 悬浮在图片正中心的判定图标 */
+  .mark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .mark--ok { width: 46px; height: 45px; }
+  .mark--no { width: 50px; height: 50px; }
+
+  /* 底部按钮：与 upload.html「上传照片」完全一致 */
+  .action {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    transition: background .18s ease;
+  }
+
+  .action:hover  { background: #A6C9E4; }
+  .action:active { background: #9BC0DE; }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <!-- ============ 状态一：加载中（默认显示） ============ -->
+    <section class="state" id="stateLoading">
+      <div class="loading">
+        <p class="loading__text">AI识别中...</p>
+        <div class="spinner" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 状态二：审核通过（默认隐藏） ============ -->
+    <section class="state" id="statePass" hidden>
+      <p class="verdict">识别成功，已通过审核</p>
+
+      <div class="shot">
+        <img id="imgPass" alt="上传的物品照片">
+        <svg class="mark mark--ok" viewBox="0 0 46 45" aria-label="已通过">
+          <circle cx="23" cy="22.5" r="20.5"
+                  fill="none" stroke="#44B31F" stroke-width="2.5" />
+          <path d="M13.5 23 20 29.5 32.5 15.5"
+                fill="none" stroke="#44B31F" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+
+      <a class="action" href="book.html">下一步</a>
+    </section>
+
+    <!-- ============ 状态三：审核不通过（默认隐藏） ============ -->
+    <section class="state" id="stateFail" hidden>
+      <p class="verdict">未通过审核</p>
+
+      <div class="shot">
+        <img id="imgFail" alt="上传的物品照片">
+        <svg class="mark mark--no" viewBox="0 0 50 50" aria-label="未通过">
+          <circle cx="25" cy="25" r="22.5"
+                  fill="none" stroke="#E23C04" stroke-width="2.8" />
+          <path d="M17 17 33 33M33 17 17 33"
+                fill="none" stroke="#E23C04" stroke-width="3.4"
+                stroke-linecap="round" />
+        </svg>
+      </div>
+
+      <a class="action" href="upload.html">重新上传</a>
+    </section>
+
+  </main>
+
+<script>
+  (function () {
+
+    var loadingEl = document.getElementById('stateLoading');
+    var passEl    = document.getElementById('statePass');
+    var failEl    = document.getElementById('stateFail');
+    var passText  = document.querySelector('#statePass .verdict');
+    var failText  = document.querySelector('#stateFail .verdict');
+
+    /* 如果上一页把照片存进了 sessionStorage，这里自动显示；
+       没存就保持灰色占位块。 */
+    var photo = localStorage.getItem('sf_last_photo');
+    if (photo) {
+      document.getElementById('imgPass').src = photo;
+      document.getElementById('imgFail').src = photo;
+    }
+
+    /* ---------------------------------------------------------------
+      占位数据：目前先发一串假 base64，只为验证请求链路是否通。
+      接真实图片时，把下面这行换成：
+        var dataUrl = await compressImage(file, 1024, 0.8);
+        var base64  = dataUrl.split(',')[1];
+      并删掉 fakeImageBase64。
+    --------------------------------------------------------------- */
+    var fakeImageBase64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+    function showResult(state, text) {
+      loadingEl.hidden = true;
+      if (state === 'pass') {
+        passText.textContent = text || '识别成功，已通过审核';
+        passEl.hidden = false;
+      } else {
+        failText.textContent = text || '未通过审核';
+        failEl.hidden = false;
+      }
+    }
+
+    function backToUpload(msg) {
+      alert(msg);
+      window.location.href = 'upload.html';
+    }
+
+    /* ---------------- 演示开关 ----------------
+       false：不请求接口，2 秒后返回本地模拟结果，任何环境都能走完流程
+       true ：请求真实 AI 接口（需要下面这个 https 隧道可用）      */
+    var USE_REAL_API = true;
+
+    var MOCK_RESULT = {
+      passed: true,
+      result: '识别通过：饮品，建议放入 S 格口',
+      category_name: '饮品',
+      recommended_grid: 'S'
+    };
+
+    async function runReview() {
+      var data;
+
+      /* 优先用上一页选的真实照片，没有才退回占位图 */
+      var savedPhoto = '';
+      try { savedPhoto = localStorage.getItem('sf_last_photo') || ''; } catch (e) {}
+
+      var realBase64 = savedPhoto.indexOf(',') > -1 ? savedPhoto.split(',')[1] : savedPhoto;
+      if (!realBase64) realBase64 = fakeImageBase64;
+
+      if (USE_REAL_API) {
+        var res;
+
+        /* 60 秒超时：接口单次需 10~30 秒，超过则主动中断 */
+        var ctrl  = new AbortController();
+        var timer = setTimeout(function () { ctrl.abort(); }, 60000);
+
+        /* 网络层失败：断网 / 跨域被拦 / 服务未启动 / 超时中断 */
+        try {
+          res = await fetch('https://territories-lawn-western-vacation.trycloudflare.com/api/vision', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ image_base64: realBase64 }),
+            signal:  ctrl.signal
+          });
+        } catch (netErr) {
+          clearTimeout(timer);
+          backToUpload(netErr && netErr.name === 'AbortError'
+            ? '识别超时，请重试'
+            : '网络请求失败');
+          return;
+        }
+
+        clearTimeout(timer);
+
+        /* 响应体可能不是 JSON，解析失败时给空对象兜底 */
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          data = {};
+        }
+
+        /* 400 / 500 / 502 等 */
+        if (!res.ok) {
+          backToUpload(data.message || data.error || '网络请求失败');
+          return;
+        }
+      } else {
+        /* 模拟：2 秒后直接给出结果 */
+        await new Promise(function (resolve) { setTimeout(resolve, 2000); });
+        data = MOCK_RESULT;
+      }
+
+      /* 把 AI 推荐格口与品类传给 book.html 做联动高亮 */
+      try {
+        if (data.recommended_grid) {
+          localStorage.setItem('sf_recommended_grid', data.recommended_grid);
+        }
+        if (data.category_name) {
+          localStorage.setItem('sf_category', data.category_name);
+        }
+      } catch (e) {}
+
+      if (data.passed === true) {
+        showResult('pass', data.result);
+      } else if (data.passed === false) {
+        showResult('fail', data.result);
+      } else {
+        backToUpload('接口返回格式异常');
+      }
+    }
+
+    runReview();
+
+  })();
+</script>
+
+</body>
+</html>

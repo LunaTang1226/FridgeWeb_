@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>我的订单</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:      #EBEDF1;
+    --card:    #FFFFFF;
+    --brand:   #205285;
+    --ink:     #030405;
+    --muted:   #8A8A8A;
+    --line:    #EDEEF0;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 顶部栏 ============ */
+  .back {
+    position: absolute;
+    left: 12px;
+    top: 30px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2B2E33;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 3;
+  }
+
+  .back svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .title {
+    position: absolute;
+    top: 38px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 状态筛选 ============ */
+  .tabs {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 84px;
+    display: flex;
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tabs button {
+    flex: 1;
+    height: 44px;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    color: #6B7078;
+    cursor: pointer;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tabs button.is-active {
+    color: var(--brand);
+    font-weight: 700;
+  }
+
+  .tabs button.is-active::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--brand);
+  }
+
+  /* ============ 订单列表 ============ */
+  .list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 129px;
+    bottom: 0;
+    overflow-y: auto;
+    padding: 14px 34.5px 40px;
+    scrollbar-width: none;
+  }
+
+  .list::-webkit-scrollbar { display: none; }
+
+  .order {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .order__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .order__code {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  .order__state {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--brand);
+  }
+
+  .order__meta {
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .order__foot {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .order__btn {
+    height: 30px;
+    padding: 0 14px;
+    border: 1px solid var(--brand);
+    border-radius: 6px;
+    background: #FFFFFF;
+    color: var(--brand);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 28px;
+    text-decoration: none;
+  }
+
+  /* ============ 空态 ============ */
+  .empty {
+    padding-top: 120px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 300;
+    color: #A9AEB6;
+  }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <a class="back" href="profile.html" aria-label="返回">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 5 8 12l7 7" />
+      </svg>
+    </a>
+
+    <h1 class="title">我的订单</h1>
+
+    <div class="tabs" id="tabs">
+      <button type="button" class="is-active" data-filter="all">全部</button>
+      <button type="button" data-filter="todo">待使用</button>
+      <button type="button" data-filter="using">使用中</button>
+      <button type="button" data-filter="done">已完成</button>
+    </div>
+
+    <div class="list" id="list"></div>
+
+  </main>
+
+<script>
+  (function () {
+
+    /* ---------------------------------------------------------
+       数据来源两个部分：
+       1. 当前进行中的订单（selectedGrid + sf_start_time）
+       2. 已完成的历史订单（sf_orders 数组，由 settle.html 归档）
+       --------------------------------------------------------- */
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+    function hm(ts) {
+      var d = new Date(ts);
+      return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    var orders = [];
+
+    /* 当前进行中 */
+    var grid    = localStorage.getItem('selectedGrid');
+    var startTs = Number(localStorage.getItem('sf_start_time'));
+    var orderNo = localStorage.getItem('sf_order_no');
+
+    if (grid && startTs) {
+      orders.push({
+        code:  grid,
+        state: '使用中',
+        filter: 'using',
+        no:    orderNo || '—',
+        time:  hm(startTs),
+        endTime: ''
+      });
+    }
+
+    /* 历史已完成 */
+    try {
+      var hist = JSON.parse(localStorage.getItem('sf_orders') || '[]');
+
+      if (Array.isArray(hist)) {
+        hist.forEach(function (o) {
+          orders.push({
+            code:  o.code || '—',
+            state: o.state || '已完成',
+            filter: 'done',
+            no:    o.no || '—',
+            time:  o.start ? hm(o.start) : '—',
+            endTime: o.end ? hm(o.end) : ''
+          });
+        });
+      }
+    } catch (e) {}
+
+    var listEl = document.getElementById('list');
+    var current = 'all';
+
+    function render() {
+      var shown = orders.filter(function (o) {
+        return current === 'all' || o.filter === current;
+      });
+
+      if (!shown.length) {
+        listEl.innerHTML = '<p class="empty">暂无订单</p>';
+        return;
+      }
+
+      listEl.innerHTML = shown.map(function (o) {
+        var timeLine = o.endTime ? (o.time + ' - ' + o.endTime) : o.time;
+
+        var foot = o.filter === 'using'
+          ? '<div class="order__foot">' +
+              '<a class="order__btn" href="using.html">查看详情</a>' +
+            '</div>'
+          : '';
+
+        return '<article class="order">' +
+          '<div class="order__head">' +
+            '<span class="order__code">格口 ' + o.code + '</span>' +
+            '<span class="order__state">' + o.state + '</span>' +
+          '</div>' +
+          '<p class="order__meta">订单编号：' + o.no + '<br>开锁时间：' + timeLine + '</p>' +
+          foot +
+        '</article>';
+      }).join('');
+    }
+
+    var tabBtns = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
+
+    tabBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        tabBtns.forEach(function (b) { b.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+        current = btn.dataset.filter;
+        render();
+      });
+    });
+
+    render();
+
+  })();
+</script>
+
+</body>
+</html>

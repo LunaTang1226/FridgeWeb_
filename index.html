@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>西四六楼·共享冰柜</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --brand:      #205285;  /* 深蓝 */
+    --bg:         #EBEDF1;  /* 页面底色 */
+    --btn:        #B2D2EA;  /* 按钮底色 */
+    --ink:        #000000;
+    --nav-bg:     #FFFFFF;
+    --nav-line:   #E8EAEE;
+    --nav-idle:   #A9AEB6;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;               /* 仅用于衬托手机画面，不参与设计稿 */
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ 手机容器 375 × 826 ============ */
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 主体内容区（垂直居中偏上） ============ */
+  .hero {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 690px;                     /* 826 - 70(底距) - 66(导航高) */
+    padding-top: 190px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;               /* 严格水平居中 */
+    text-align: center;
+  }
+
+  /* 主图标：直径 103px 圆形 + 描边 */
+  .hero__icon {
+    width: 103px;
+    height: 103px;
+    border: 2px solid var(--brand);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+
+  .hero__icon svg {
+    width: 42px;
+    height: 42px;
+    display: block;
+    stroke: var(--brand);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  /* 主标题：28px / bold / 距图标 21px */
+  .hero__title {
+    margin-top: 21px;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: 0.5px;
+  }
+
+  /* 副标题：12px / 距主标题 14px / 黑色浅色 */
+  .hero__sub {
+    margin-top: 14px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink);
+    opacity: .55;
+    letter-spacing: 0.4px;
+  }
+
+  /* 主按钮：265 × 48 / 距副标题 34px / 圆角 7px */
+  .hero__btn {
+    display: block;                    /* 由 <button> 改为 <a>，需显式 block */
+    margin-top: 34px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;                /* 设计稿 corner smoothing 28%，CSS 无等价参数 */
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 48px;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .18s ease, transform .12s ease;
+  }
+
+  .hero__btn:hover  { background: #A6C9E4; }
+  .hero__btn:active { background: #9BC0DE; transform: scale(.985); }
+
+  /* ============ 底部导航（距底 70px，高 66px） ============ */
+  .tabbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 70px;
+    height: 66px;
+    display: flex;
+    background: var(--nav-bg);
+    border-top: 1px solid var(--nav-line);
+  }
+
+  .tabbar__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+    color: var(--nav-idle);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tabbar__item svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .tabbar__item span {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .tabbar__item.is-active { color: var(--brand); }
+  .tabbar__item.is-active svg { stroke-width: 1.8; }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <!-- 主体：图标 → 标题 → 副标题 → 按钮 -->
+    <section class="hero">
+
+      <!-- 主图标：带描边的圆形 + 冰箱线条 -->
+      <div class="hero__icon" role="img" aria-label="共享冰柜">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <!-- 冰箱外框 -->
+          <rect x="6.5" y="2.5" width="11" height="19" rx="2.2" />
+          <!-- 上下门分隔线 -->
+          <line x1="6.5" y1="9.2" x2="17.5" y2="9.2" />
+          <!-- 上门把手 -->
+          <line x1="14.8" y1="4.8" x2="14.8" y2="6.8" />
+          <!-- 下门把手 -->
+          <line x1="14.8" y1="11.6" x2="14.8" y2="14" />
+        </svg>
+      </div>
+
+      <h1 class="hero__title">西四六楼·共享冰柜</h1>
+      <p class="hero__sub">按小时计费·独立格口·押金可退</p>
+
+      <!-- 交互 2：进入预约流程（页面尚未创建，建好后链接自动生效） -->
+      <a class="hero__btn" href="manual.html">立即预约</a>
+
+    </section>
+
+    <!-- 底部导航 -->
+    <nav class="tabbar">
+      <a class="tabbar__item is-active" href="index.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 10.4 12 4.2l8 6.2V19.4a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19.4z" />
+        </svg>
+        <span>首页</span>
+      </a>
+      <!-- 交互 1：跳转「我的」 -->
+      <a class="tabbar__item" href="profile.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8.2" r="3.6" />
+          <path d="M5.2 20.2c0-3.4 3-6.1 6.8-6.1s6.8 2.7 6.8 6.1" />
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+
+  </main>
+
+</body>
+</html>

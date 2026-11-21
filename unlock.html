@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>预约成功</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:   #EBEDF1;
+    --brand:#205285;
+    --btn:  #B2D2EA;
+    --ink:  #030405;
+    --spin: #1296DB;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 标题：距上 69px ============ */
+  .title {
+    position: absolute;
+    top: 69px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 信息框 300 × 111 ============ */
+  .info {
+    position: absolute;
+    left: 37.5px;                      /* (375 - 300) / 2 */
+    top: 114px;                        /* 标题底 89 + 25 */
+    width: 300px;
+    height: 111px;
+    background: #FFFFFF;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;           /* 三行整体垂直居中 */
+    gap: 9px;                          /* 行间距 9px */
+    padding-left: 29px;                /* 文字距框左边 29px */
+  }
+
+  .info p {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1;
+    color: #6B7078;                    /* 浅色 */
+    text-align: left;
+  }
+
+  /* ============ 密码开锁入口 ============ */
+  .pwd-link {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 124px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--brand);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .pwd-link:active { opacity: .7; }
+
+  .pwd-input {
+    position: absolute;
+    left: 55px;
+    bottom: 124px;
+    width: 265px;
+    height: 48px;
+    padding: 0 16px;
+    border: 1px solid #C7CBD2;
+    border-radius: 7px;
+    background: #FFFFFF;
+    font-family: inherit;
+    font-size: 16px;
+    color: #000000;
+    text-align: center;
+    letter-spacing: 2px;
+    outline: none;
+  }
+
+  .pwd-input::placeholder {
+    font-size: 13px;
+    letter-spacing: 0;
+    color: #A9AEB6;
+  }
+
+  .pwd-input:focus { border-color: var(--brand); }
+
+  .pwd-hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 180px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #A9AEB6;
+  }
+
+  /* ============ 主按钮 ============ */
+  .main-btn {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+
+  .main-btn:hover  { background: #A6C9E4; }
+  .main-btn:active { background: #9BC0DE; }
+
+  /* ============ 开锁弹窗 ============ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 71px;
+    z-index: 10;
+  }
+
+  .toast__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+
+  .spinner {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin-top: 12px;
+    animation: spinner-rotate 1s steps(8) infinite;
+  }
+
+  .spinner span {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 4px;
+    height: 12px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--spin);
+    transform-origin: 2px 12px;
+  }
+
+  .spinner span:nth-child(1) { transform: rotate(0deg);   opacity: 1;   }
+  .spinner span:nth-child(2) { transform: rotate(45deg);  opacity: .88; }
+  .spinner span:nth-child(3) { transform: rotate(90deg);  opacity: .76; }
+  .spinner span:nth-child(4) { transform: rotate(135deg); opacity: .64; }
+  .spinner span:nth-child(5) { transform: rotate(180deg); opacity: .52; }
+  .spinner span:nth-child(6) { transform: rotate(225deg); opacity: .40; }
+  .spinner span:nth-child(7) { transform: rotate(270deg); opacity: .28; }
+  .spinner span:nth-child(8) { transform: rotate(315deg); opacity: .16; }
+
+  @keyframes spinner-rotate { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="title">预约成功</h1>
+
+    <section class="info">
+      <p>订单编号：<span id="orderNo">—</span></p>
+      <p>柜口位置：西四六楼</p>
+      <p>柜口编号：<span id="gridNo">C01</span></p>
+    </section>
+
+    <!-- 默认：蓝牙开锁 -->
+    <div id="bleGroup">
+      <a class="pwd-link" id="pwdLink">蓝牙开锁失败？使用一次性密码</a>
+      <button class="main-btn" type="button" id="bleBtn">我已到柜，蓝牙开锁</button>
+    </div>
+
+    <!-- 密码开锁（默认隐藏） -->
+    <div id="pwdGroup" hidden>
+      <input class="pwd-input" id="pwdInput" type="text" inputmode="numeric"
+             autocomplete="off" maxlength="4" placeholder="请输入 4 位一次性密码">
+      <p class="pwd-hint">没收到密码？请联系管理员获取</p>
+      <button class="main-btn" type="button" id="pwdBtn">确认开锁</button>
+    </div>
+
+    <div class="toast" id="toast" hidden>
+      <p class="toast__text" id="toastText">正在开锁...</p>
+      <div class="spinner" id="toastSpinner" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+  </main>
+
+<script>
+  (function () {
+
+    /* ---------------- 格口编号 ---------------- */
+    var grid = localStorage.getItem('selectedGrid') || 'C01';
+    document.getElementById('gridNo').textContent = grid;
+
+    /* ---------------- 订单编号 ----------------
+       规则：今天日期 8 位 + 当天第几个使用冰箱的序号 3 位（不足补零）
+       同一天内重复进入本页，沿用已生成的编号，不重复递增。       */
+    function pad(n, len) {
+      var s = String(n);
+      while (s.length < len) s = '0' + s;
+      return s;
+    }
+
+    var now = new Date();
+    var today = '' + now.getFullYear() + pad(now.getMonth() + 1, 2) + pad(now.getDate(), 2);
+
+    var orderNo = '';
+
+    try {
+      var saved = localStorage.getItem('sf_order_no');
+
+      if (saved && saved.slice(0, 8) === today) {
+        orderNo = saved;
+      } else {
+        var seqKey = 'sf_seq_' + today;
+        var seq = Number(localStorage.getItem(seqKey) || 0) + 1;
+        localStorage.setItem(seqKey, seq);
+        orderNo = today + pad(seq, 3);
+        localStorage.setItem('sf_order_no', orderNo);
+      }
+    } catch (e) {
+      orderNo = today + '001';
+    }
+
+    document.getElementById('orderNo').textContent = orderNo;
+
+    /* ---------------- 交互 ---------------- */
+    var bleGroup  = document.getElementById('bleGroup');
+    var pwdGroup  = document.getElementById('pwdGroup');
+    var pwdLink   = document.getElementById('pwdLink');
+    var pwdInput  = document.getElementById('pwdInput');
+    var toast     = document.getElementById('toast');
+    var toastText = document.getElementById('toastText');
+    var spinner   = document.getElementById('toastSpinner');
+
+    pwdLink.addEventListener('click', function () {
+      bleGroup.hidden = true;
+      pwdGroup.hidden = false;
+      pwdInput.focus();
+    });
+
+    function runUnlock() {
+      toast.hidden = false;
+      toastText.textContent = '正在开锁...';
+      spinner.hidden = false;
+
+      setTimeout(function () {
+        toastText.textContent = '开锁成功';
+        spinner.hidden = true;
+
+        setTimeout(function () {
+          window.location.href = 'using.html';
+        }, 800);
+      }, 1600);
+    }
+
+    document.getElementById('bleBtn').addEventListener('click', function (e) {
+      e.currentTarget.disabled = true;
+      runUnlock();
+    });
+
+    document.getElementById('pwdBtn').addEventListener('click', function (e) {
+      var code = pwdInput.value.trim();
+
+      /* 只接受 4 位数字 */
+      if (!/^\d{4}$/.test(code)) {
+        alert('请输入 4 位数字密码');
+        return;
+      }
+
+      /* 与管理员生成的应急码比对 */
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem('sf_emergency_code') || 'null'); } catch (err) {}
+
+      if (!saved || saved.code !== code) {
+        alert('密码不正确，请向管理员确认');
+        return;
+      }
+
+      /* 一次性：用过即作废 */
+      try { localStorage.removeItem('sf_emergency_code'); } catch (err) {}
+
+      e.currentTarget.disabled = true;
+      runUnlock();
+    });
+
+    pwdInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('pwdBtn').click();
+    });
+
+  })();
+</script>
+
+</body>
+</html>

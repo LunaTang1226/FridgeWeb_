@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>反馈与建议</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:   #EBEDF1;
+    --brand:#205285;
+    --btn:  #B2D2EA;
+    --ink:  #030405;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* 左上角返回 */
+  .back {
+    position: absolute;
+    left: 12px;
+    top: 62px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2B2E33;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 3;
+  }
+
+  .back svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .title {
+    position: absolute;
+    top: 69px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 评分 ============ */
+  .rate-label {
+    position: absolute;
+    top: 132px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    color: #5B6068;
+  }
+
+  .stars {
+    position: absolute;
+    top: 162px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .stars button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .stars svg {
+    width: 34px;
+    height: 34px;
+    display: block;
+    fill: #D6DAE0;
+    transition: fill .15s ease;
+  }
+
+  .stars button.is-on svg { fill: #F0B429; }
+
+  /* ============ 输入区 ============ */
+  .field-label {
+    position: absolute;
+    top: 226px;
+    left: 34.5px;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    color: #5B6068;
+  }
+
+  .feedback-input {
+    position: absolute;
+    left: 34.5px;
+    top: 252px;
+    width: 306px;
+    height: 160px;
+    padding: 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #FFFFFF;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #000000;
+    resize: none;
+    outline: none;
+  }
+
+  .feedback-input::placeholder { color: #B1BBC4; }
+
+  .counter {
+    position: absolute;
+    top: 422px;
+    right: 34.5px;
+    font-size: 11px;
+    font-weight: 300;
+    color: #A9AEB6;
+  }
+
+  /* ============ 提交按钮 ============ */
+  .main-btn {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+
+  .main-btn:hover  { background: #A6C9E4; }
+  .main-btn:active { background: #9BC0DE; }
+
+  /* ============ 提交成功弹窗 ============ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 66px;
+    z-index: 10;
+  }
+
+  .toast__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+
+  .toast__note {
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+  }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <a class="back" href="profile.html" aria-label="返回">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 5 8 12l7 7" />
+      </svg>
+    </a>
+
+    <h1 class="title">反馈与建议</h1>
+
+    <p class="rate-label">本次使用体验如何？</p>
+
+    <div class="stars" id="stars">
+      <button type="button" aria-label="1 星"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.7 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.5l6.6-.9z"/></svg></button>
+      <button type="button" aria-label="2 星"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.7 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.5l6.6-.9z"/></svg></button>
+      <button type="button" aria-label="3 星"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.7 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.5l6.6-.9z"/></svg></button>
+      <button type="button" aria-label="4 星"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.7 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.5l6.6-.9z"/></svg></button>
+      <button type="button" aria-label="5 星"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.7 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.5l6.6-.9z"/></svg></button>
+    </div>
+
+    <p class="field-label">具体建议</p>
+
+    <textarea class="feedback-input" id="text" maxlength="200"
+              placeholder="格口大小、使用流程、计费方式，有什么想法都可以写在这里"></textarea>
+    <p class="counter" id="counter">0 / 200</p>
+
+    <button class="main-btn" type="button" id="submitBtn">提交反馈</button>
+
+    <div class="toast" id="toast" hidden>
+      <p class="toast__text">感谢你的反馈</p>
+      <p class="toast__note">我们会持续改进</p>
+    </div>
+
+  </main>
+
+<script>
+  (function () {
+
+    var starBtns = Array.prototype.slice.call(document.querySelectorAll('#stars button'));
+
+    starBtns.forEach(function (btn, idx) {
+      btn.addEventListener('click', function () {
+        starBtns.forEach(function (b, i) {
+          b.classList.toggle('is-on', i <= idx);
+        });
+      });
+    });
+
+    var text    = document.getElementById('text');
+    var counter = document.getElementById('counter');
+
+    text.addEventListener('input', function () {
+      counter.textContent = text.value.length + ' / 200';
+    });
+
+    var submitBtn = document.getElementById('submitBtn');
+    var toast     = document.getElementById('toast');
+
+    submitBtn.addEventListener('click', function () {
+      submitBtn.disabled = true;
+      toast.hidden = false;
+
+      setTimeout(function () {
+        window.location.href = 'profile.html';
+      }, 1800);
+    });
+
+  })();
+</script>
+
+</body>
+</html>

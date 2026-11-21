@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>使用手册</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --brand:    #205285;   /* 深蓝，勾选框选中态 */
+    --bg:       #EBEDF1;   /* 与首页一致的页面底色 */
+    --ink:      #000000;
+    --line:     #DDDADA;   /* 分割线 */
+    --warn:     #AB3737;   /* 红色提示 */
+    --btn-on:   #B2D2EA;   /* 可点击按钮 */
+    --btn-off:  #D5D8DC;   /* 默认灰色按钮 */
+    --btn-ink:  #030405;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;               /* 仅用于衬托手机画面，不参与设计稿 */
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 左上角返回箭头 ============ */
+  .back {
+    position: absolute;
+    left: 8px;                          /* 视觉中心对准内容左边缘 24px */
+    top: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2B2E33;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 3;
+  }
+
+  .back svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  /* ============ 可滚动的正文区 ============ */
+  .scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 230px;              /* 预留底部固定区高度 */
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* 页面标题：16px / regular / 左 24 / 上 32 */
+  .page-title {
+    margin: 32px 24px 0;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  /* 极细分割线：宽 347.08 / 高 0 / #DDDADA */
+  .rule {
+    width: 347.08px;
+    height: 0;
+    margin: 16px auto 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* 列表区块小标题：左 25 / 12px */
+  .sec-title {
+    margin: 16px 25px 0;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  /* 有序列表：左 25 / 12px / 浅色 */
+  .sec-list {
+    margin: 6px 25px 0;
+    padding-left: 16px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.9;
+    color: rgba(0, 0, 0, .62);         /* 与原先 opacity:.62 视觉等价 */
+  }
+
+  /* 重要提示：警告部分红色，押金说明保持常规浅色 */
+  .sec-list li.notice { color: var(--warn); }
+  .sec-list li.notice .normal { color: rgba(0, 0, 0, .62); }
+
+  .sec-list li { padding-left: 2px; }
+  .sec-list li + li { margin-top: 4px; }
+
+  /* 红色提示 */
+  .warn {
+    margin: 14px 25px 0;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--warn);
+    opacity: .9;
+  }
+
+  /* ============ 底部固定区 ============ */
+  .footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px 0 58px;               /* 按钮底边距页面底部 58px */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+    z-index: 2;
+  }
+
+  /* 内容与固定区之间的柔和过渡，避免生硬切断 */
+  .footer::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -28px;
+    height: 28px;
+    background: linear-gradient(to bottom, rgba(235, 237, 241, 0), var(--bg));
+    pointer-events: none;
+  }
+
+  /* 复选框 + 协议文字 */
+  .agree-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .agree-row__text {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--ink);
+    opacity: .62;
+  }
+
+  /* 原生 checkbox 重绘：默认灰框白底 */
+  .agree {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #B0B4BA;
+    border-radius: 2px;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: background .16s ease, border-color .16s ease;
+  }
+
+  /* 选中：蓝底 + 白色勾 */
+  .agree:checked {
+    background: var(--brand);
+    border-color: var(--brand);
+  }
+
+  .agree:checked::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 4px;
+    width: 4px;
+    height: 8px;
+    border: solid #FFFFFF;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* 下一步按钮：265 × 48 / 圆角 7 / 距底 58 */
+  .next-btn {
+    width: 265px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    background: var(--btn-off);
+    color: var(--btn-ink);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    pointer-events: none;               /* 未勾选：不可点击 */
+    transition: background .18s ease;
+  }
+
+  /* 勾选后按钮变浅蓝并可点击（纯 CSS，无 JS） */
+  .footer:has(.agree:checked) .next-btn {
+    background: var(--btn-on);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .footer:has(.agree:checked) .next-btn:hover  { background: #A6C9E4; }
+  .footer:has(.agree:checked) .next-btn:active { background: #9BC0DE; }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <!-- 返回首页 -->
+    <a class="back" href="index.html" aria-label="返回">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 5 8 12l7 7" />
+      </svg>
+    </a>
+
+    <!-- 正文（可滚动） -->
+    <div class="scroll">
+
+      <h1 class="page-title">使用手册</h1>
+
+      <hr class="rule">
+
+      <h2 class="sec-title">【使用流程】</h2>
+      <ol class="sec-list">
+        <li>阅读使用手册</li>
+        <li>上传实物照片、AI审核</li>
+        <li>审核通过、支付押金</li>
+        <li>选择格口、蓝牙开锁</li>
+        <li>结束使用、清理格口</li>
+        <li>结费、退还押金</li>
+      </ol>
+
+      <hr class="rule" style="margin-top: 32px;">
+
+      <h2 class="sec-title">【注意事项与计费说明】</h2>
+      <ol class="sec-list">
+        <li>押金说明：为保障物品安全，每次使用前需支付 20 元信用押金。</li>
+        <li>计费规则：按小时计费（0.05元/小时），自首次开门起算，单次最长存放 72 小时。超时管理员有权清理物品并扣除部分押金。</li>
+        <li>禁放物品：为保证卫生，只接受密封、可标注的食物。严禁存放生肉、海鲜、榴莲等重味食品，违者押金不予退还。</li>
+        <li class="notice">先清空物品、擦净格口并关好柜门，再点「结束使用」。订单结束后柜门将无法再次打开。<span class="normal">确认无损坏且无异味后，20元押金将在 7 个工作日内原路退回。</span></li>
+      </ol>
+
+      <p class="warn">请仔细阅读使用手册；若违反并造成设备损坏的自行承担责任</p>
+
+    </div>
+
+    <!-- 底部固定区 -->
+    <div class="footer">
+      <label class="agree-row">
+        <input class="agree" type="checkbox">
+        <span class="agree-row__text">我已阅读并同意《用户服务协议》和《隐私政策》</span>
+      </label>
+
+      <!-- 勾选后此链接才可点击，跳转 booking 页 -->
+      <a class="next-btn" href="upload.html">下一步</a>
+    </div>
+
+  </main>
+
+</body>
+</html>

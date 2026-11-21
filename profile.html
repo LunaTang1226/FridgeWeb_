@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>个人中心</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:      #EBEDF1;
+    --card:    #FFFFFF;
+    --brand:   #205285;
+    --ink:     #030405;
+    --muted:   #8A8A8A;
+    --line:    #E8EAEE;
+    --nav-idle:#A9AEB6;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 页面标题：左 44 / 上 35 ============ */
+  .page-title {
+    position: absolute;
+    top: 35px;
+    left: 44px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 头像 + 昵称（距标题底 17px） ============ */
+  .user {
+    position: absolute;
+    top: 66px;                        /* 35 + 14 + 17 */
+    left: 44px;
+    right: 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .avatar {
+    flex: none;
+    width: 67px;
+    height: 67px;
+    border: 0;
+    border-radius: 50%;
+    background: #FFFFFF;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .avatar svg {
+    width: 34px;
+    height: 34px;
+    display: block;
+    fill: var(--muted);
+  }
+
+  .user__name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .user__name span {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+  }
+
+  .edit-btn {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .edit-btn svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+    stroke: var(--muted);
+    stroke-width: 1.6;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ============ 我的订单框 295 × 104 ============ */
+  .order-card {
+    position: absolute;
+    left: 40px;
+    top: 154px;                       /* 头像底 133 + 21 */
+    width: 295px;
+    height: 104px;
+    background: var(--card);
+    border-radius: 7px;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px 10px;
+  }
+
+  .order-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .order-card__head span {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+  }
+
+  .order-card__head a {
+    font-size: 10px;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .order-card__grid {
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .order-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .order-item svg {
+    width: 26px;
+    height: 26px;
+    display: block;
+    stroke: var(--brand);
+    stroke-width: 1.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .order-item span {
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1;
+    color: #5B6068;
+  }
+
+  /* ============ 分割线 ============ */
+  .divider {
+    position: absolute;
+    left: 40px;
+    top: 270px;                       /* 258 + 12 */
+    width: 295px;
+    height: 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* ============ 三键框 295 × 39 ============ */
+  .link-box {
+    position: absolute;
+    left: 40px;
+    top: 282px;                       /* 分割线 270 + 12 */
+    width: 295px;
+    height: 39px;
+    background: var(--card);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+  }
+
+  .link-box > * {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1;
+    color: #33373C;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .link-box > * + * {
+    border-left: 1px solid var(--line);
+  }
+
+  /* ============ 底部导航 ============ */
+  .tabbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 70px;
+    height: 66px;
+    display: flex;
+    background: #FFFFFF;
+    border-top: 1px solid var(--line);
+  }
+
+  .tabbar__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+    color: var(--nav-idle);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tabbar__item svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .tabbar__item span {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .tabbar__item.is-active { color: var(--brand); }
+  .tabbar__item.is-active svg { stroke-width: 1.8; }
+
+  /* ============ 头像选择弹窗 ============ */
+  .mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .28s ease;
+    z-index: 20;
+  }
+
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 211px;
+    background: #FFFFFF;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    pointer-events: none;
+    transition: transform .30s cubic-bezier(.32, .72, 0, 1);
+    z-index: 30;
+  }
+
+  .sheet__body {
+    display: flex;
+    flex-direction: column;
+    margin-top: -21.333px;
+  }
+
+  .sheet__item {
+    flex: 0 0 70.333px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 15px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.sheet-open .mask  { opacity: 1; pointer-events: auto; }
+  body.sheet-open .sheet { transform: translateY(0); pointer-events: auto; }
+
+  /* 举报弹窗：4 项，高度自适应 */
+  .sheet--report { height: auto; }
+  .sheet--report .sheet__body { margin-top: 0; }
+
+  body.report-open .mask--report  { opacity: 1; pointer-events: auto; }
+  body.report-open .sheet--report { transform: translateY(0); pointer-events: auto; }
+
+  /* ============ 昵称编辑弹窗 ============ */
+  .dialog-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+  }
+
+  .dialog {
+    width: 280px;
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .dialog__title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+    text-align: center;
+  }
+
+  .dialog__input {
+    margin-top: 16px;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #DDDADA;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    color: #000000;
+    outline: none;
+  }
+
+  .dialog__input:focus { border-color: var(--brand); }
+
+  .dialog__actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .dialog__actions button {
+    flex: 1;
+    height: 38px;
+    border: 0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .dialog__cancel {
+    background: #EEF0F3;
+    color: #33373C;
+  }
+
+  .dialog__ok {
+    background: var(--brand);
+    color: #FFFFFF;
+    font-weight: 700;
+  }
+
+  /* ============ 举报弹窗 ============ */
+  .dialog--report { width: 300px; }
+
+  .report-input {
+    margin-top: 14px;
+    width: 100%;
+    height: 96px;
+    padding: 10px 12px;
+    border: 1px solid #DDDADA;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #000000;
+    resize: none;
+    outline: none;
+  }
+
+  .report-input:focus { border-color: var(--brand); }
+
+  .report-input::placeholder { color: #B1BBC4; }
+
+  .report-tags {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .report-tag {
+    padding: 5px 9px;
+    border: 1px solid #DDE1E6;
+    border-radius: 14px;
+    background: #F7F8FA;
+    font-family: inherit;
+    font-size: 11px;
+    color: #5B6068;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .report-tag:active { background: #EDEFF2; }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="page-title">个人中心</h1>
+
+    <!-- 头像 + 昵称 -->
+    <div class="user">
+      <div class="avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+        </svg>
+      </div>
+
+      <div class="user__name">
+        <span id="nickname">微信用户</span>
+        <button class="edit-btn" type="button" id="editBtn" aria-label="修改昵称">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" />
+            <path d="M14 6l4 4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 我的订单 -->
+    <section class="order-card">
+      <div class="order-card__head">
+        <span>我的订单</span>
+        <a href="orders.html">全部订单</a>
+      </div>
+
+      <div class="order-card__grid">
+        <a class="order-item" href="orders.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 7.5V12l3 1.8" />
+          </svg>
+          <span>待使用</span>
+        </a>
+
+        <a class="order-item" href="orders.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="6" y="3" width="12" height="18" rx="2" />
+            <path d="M6 10h12" />
+          </svg>
+          <span>使用中</span>
+        </a>
+
+        <a class="order-item" href="orders.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M8 12.2l2.6 2.6L16 9.4" />
+          </svg>
+          <span>已完成</span>
+        </a>
+
+        <a class="order-item" href="orders.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+            <path d="M4.5 4.5V10H10" />
+          </svg>
+          <span>退款</span>
+        </a>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 反馈 / 帮助 / 举报 -->
+    <section class="link-box">
+      <a href="feedback.html">反馈与建议</a>
+      <span id="reportBtn">举报</span>
+    </section>
+
+    <!-- 底部导航 -->
+    <nav class="tabbar">
+      <a class="tabbar__item" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 10.4 12 4.2l8 6.2V19.4a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19.4z" />
+        </svg>
+        <span>首页</span>
+      </a>
+      <a class="tabbar__item is-active" href="profile.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8.2" r="3.6" />
+          <path d="M5.2 20.2c0-3.4 3-6.1 6.8-6.1s6.8 2.7 6.8 6.1" />
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <!-- 举报弹窗 -->
+    <div class="dialog-mask" id="reportMask" hidden>
+      <div class="dialog dialog--report">
+        <p class="dialog__title">举报</p>
+        <textarea class="report-input" id="reportText" maxlength="200"
+                  placeholder="请描述遇到的问题，以及是哪个格口"></textarea>
+        <div class="report-tags">
+          <button type="button" class="report-tag" data-fill="格口内有违规物品">格口内有违规物品</button>
+          <button type="button" class="report-tag" data-fill="设备故障（无法开锁 / 门关不上）">设备故障</button>
+          <button type="button" class="report-tag" data-fill="长期占格不使用">长期占格不使用</button>
+        </div>
+        <div class="dialog__actions">
+          <button class="dialog__cancel" type="button" id="reportCancel">取消</button>
+          <button class="dialog__ok" type="button" id="reportSubmit">提交</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 昵称编辑弹窗 -->
+    <div class="dialog-mask" id="nameMask" hidden>
+      <div class="dialog">
+        <p class="dialog__title">修改昵称</p>
+        <input class="dialog__input" id="nameInput" type="text" maxlength="12" autocomplete="off">
+        <div class="dialog__actions">
+          <button class="dialog__cancel" type="button" id="nameCancel">取消</button>
+          <button class="dialog__ok" type="button" id="nameOk">确定</button>
+        </div>
+      </div>
+    </div>
+
+    
+
+  </main>
+
+<script>
+  (function () {
+
+    /* ---------------- 读取已保存的昵称 ---------------- */
+    var nicknameEl = document.getElementById('nickname');
+
+    var savedName = localStorage.getItem('sf_nickname');
+    if (savedName) nicknameEl.textContent = savedName;
+
+    /* ---------------- 昵称编辑 ---------------- */
+    var nameMask  = document.getElementById('nameMask');
+    var nameInput = document.getElementById('nameInput');
+
+    document.getElementById('editBtn').addEventListener('click', function () {
+      nameInput.value = nicknameEl.textContent;
+      nameMask.hidden = false;
+      nameInput.focus();
+      nameInput.select();
+    });
+
+    document.getElementById('nameCancel').addEventListener('click', function () {
+      nameMask.hidden = true;
+    });
+
+    document.getElementById('nameOk').addEventListener('click', function () {
+      var v = nameInput.value.trim();
+
+      if (!v) {
+        alert('昵称不能为空');
+        return;
+      }
+
+      nicknameEl.textContent = v;
+      try { localStorage.setItem('sf_nickname', v); } catch (e) {}
+      nameMask.hidden = true;
+    });
+
+    nameInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('nameOk').click();
+    });
+
+    /* ---------------- 举报 ---------------- */
+    var reportBtn  = document.getElementById('reportBtn');
+    var reportMask = document.getElementById('reportMask');
+    var reportText = document.getElementById('reportText');
+
+    reportBtn.addEventListener('click', function () {
+      reportMask.hidden = false;
+      reportText.focus();
+    });
+
+    document.getElementById('reportCancel').addEventListener('click', function () {
+      reportMask.hidden = true;
+    });
+
+    /* 点遮罩空白处关闭 */
+    reportMask.addEventListener('click', function (e) {
+      if (e.target === reportMask) reportMask.hidden = true;
+    });
+
+    /* 提示词：点一下填充，用户可继续补写格口 */
+    Array.prototype.slice.call(document.querySelectorAll('.report-tag')).forEach(function (tag) {
+      tag.addEventListener('click', function () {
+        var fill = tag.dataset.fill;
+        var cur  = reportText.value.trim();
+
+        reportText.value = cur
+          ? (cur + '；' + fill + '，格口：')
+          : (fill + '，格口：');
+
+        reportText.focus();
+        reportText.setSelectionRange(reportText.value.length, reportText.value.length);
+      });
+    });
+
+    document.getElementById('reportSubmit').addEventListener('click', function () {
+      var text = reportText.value.trim();
+
+      if (!text) {
+        alert('请先描述问题');
+        return;
+      }
+
+      try {
+        var list = JSON.parse(localStorage.getItem('sf_reports') || '[]');
+        if (!Array.isArray(list)) list = [];
+
+        list.unshift({
+          reason: text,
+          code:   localStorage.getItem('selectedGrid') || '',
+          at:     Date.now()
+        });
+
+        localStorage.setItem('sf_reports', JSON.stringify(list.slice(0, 50)));
+      } catch (err) {}
+
+      reportMask.hidden = true;
+      reportText.value = '';
+      alert('举报已提交，管理员将尽快处理');
+    });
+
+  })();
+</script>
+
+</body>
+</html>

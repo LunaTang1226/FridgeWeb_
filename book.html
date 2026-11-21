@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>选择格口</title>
+<style>
+  /* ============ 全局 ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  :root {
+    --bg:      #EBEDF1;
+    --card:    #F2F6EC;   /* 三个区块底色 */
+    --cell:    #D4F8E0;   /* 格口空闲 */
+    --cell-ink:#39500E;   /* 格口编号 */
+    --sel:     #539CD8;   /* 选中 / 使用中 */
+    --sel-line:#143E69;   /* 选中边框 */
+    --rec:     #EAE678;   /* AI 推荐黄框 */
+    --btn:     #B2D2EA;
+    --ink:     #030405;
+    --spin:    #1296DB;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+  }
+
+  /* ============ 页面标题 ============ */
+  .title {
+    position: absolute;
+    top: 54px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  /* ============ 三个区块 ============ */
+  .card {
+    position: absolute;
+    background: var(--card);
+    border-radius: 8px;
+  }
+
+  .card--s { left: 27.5px; top: 87px;  width: 320px; height: 165px; }
+  .card--m { left: 27.5px; top: 283px; width: 320px; height: 210px; }
+  .card--l { left: 23px;   top: 513px; width: 329px; height: 170px; }
+
+  /* 区块内左上角标题 */
+  .card__label {
+    position: absolute;
+    left: 18px;
+    top: 11px;
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1;
+    color: #8A8A8A;
+    font-family: "Alibaba PuHuiTi 2.0", "Alibaba PuHuiTi",
+                 "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  }
+
+  /* ============ 格口网格 ============ */
+  .grid {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+  }
+
+  .grid--s { top: 41px; width: 278px; gap: 7px 12px; }
+  .grid--m { top: 40px; width: 278px; gap: 13px 12px; }
+  .grid--l { top: 57px; width: 301px; gap: 0 9px; }
+
+  .cell {
+    position: relative;
+    display: flex;
+    align-items: center;               /* 编号严格居中 */
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    color: var(--cell-ink);
+    font-size: 16px;
+    font-weight: 400;
+    font-family: "Alibaba PuHuiTi 2.0", "Alibaba PuHuiTi",
+                 "Microsoft YaHei UI", "PingFang SC", sans-serif;
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, .25);
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .15s ease, box-shadow .15s ease;
+  }
+
+  .grid--s .cell { width: 46px; height: 46px; }
+  .grid--m .cell { width: 46px; height: 66px; }
+  .grid--l .cell { width: 53px; height: 88px; }
+
+  /* 选中态：浅蓝底 + 深蓝内描边（用 inset 阴影，不影响尺寸） */
+  .cell.is-selected {
+    background: var(--sel);
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, .25),
+                inset 0 0 0 2px var(--sel-line);
+    color: #FFFFFF;
+  }
+
+  /* AI 推荐：黄色外框 + 角标 */
+  .cell.is-recommended {
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, .25),
+                0 0 0 2px var(--rec);
+    z-index: 1;
+  }
+
+  .cell.is-recommended.is-selected {
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, .25),
+                0 0 0 2px var(--rec),
+                inset 0 0 0 2px var(--sel-line);
+  }
+
+  .cell.is-recommended::after {
+    content: "AI推荐";
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: var(--rec);
+    color: #5A4A00;
+    font-size: 9px;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* AI 推荐整区：淡黄描边 */
+  .cell.is-rec-zone {
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, .25),
+                0 0 0 2px var(--rec);
+  }
+
+  /* 区块标题旁的推荐标签 */
+  .rec-tag {
+    display: none;
+    margin-left: 6px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--rec);
+    color: #5A4A00;
+    font-size: 9px;
+    font-weight: 400;
+    line-height: 1.4;
+    vertical-align: 1px;
+  }
+
+  .card.is-rec .rec-tag { display: inline-block; }
+
+  /* ============ 状态图例 ============ */
+  .legend {
+    position: absolute;
+    left: 27px;
+    top: 695px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    list-style: none;
+    font-size: 11px;
+    font-weight: 300;
+    color: #8A8A8A;
+  }
+
+  .legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend i {
+    display: block;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+  }
+
+  /* ============ 底部按钮 ============ */
+  .pay-btn {
+    position: absolute;
+    left: 55px;
+    bottom: 60px;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--btn);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .18s ease;
+  }
+
+  .pay-btn:hover  { background: #A6C9E4; }
+  .pay-btn:active { background: #9BC0DE; }
+
+  /* ============ 创建订单加载弹窗 ============ */
+  .loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 246px;
+    height: 159px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 71px;
+    z-index: 10;
+  }
+
+  .loading__text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000000;
+    letter-spacing: 0.2px;
+  }
+
+  .spinner {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin-top: 12px;
+    animation: spinner-rotate 1s steps(8) infinite;
+  }
+
+  .spinner span {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 4px;
+    height: 12px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--spin);
+    transform-origin: 2px 12px;
+  }
+
+  .spinner span:nth-child(1) { transform: rotate(0deg);   opacity: 1;   }
+  .spinner span:nth-child(2) { transform: rotate(45deg);  opacity: .88; }
+  .spinner span:nth-child(3) { transform: rotate(90deg);  opacity: .76; }
+  .spinner span:nth-child(4) { transform: rotate(135deg); opacity: .64; }
+  .spinner span:nth-child(5) { transform: rotate(180deg); opacity: .52; }
+  .spinner span:nth-child(6) { transform: rotate(225deg); opacity: .40; }
+  .spinner span:nth-child(7) { transform: rotate(270deg); opacity: .28; }
+  .spinner span:nth-child(8) { transform: rotate(315deg); opacity: .16; }
+
+  @keyframes spinner-rotate { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="title">点击选择格口</h1>
+
+    <section class="card card--s">
+      <p class="card__label">小格口 1.5L<span class="rec-tag">AI推荐</span></p>
+      <div class="grid grid--s" id="gridS"></div>
+    </section>
+
+    <section class="card card--m">
+      <p class="card__label">中格口 3L<span class="rec-tag">AI推荐</span></p>
+      <div class="grid grid--m" id="gridM"></div>
+    </section>
+
+    <section class="card card--l">
+      <p class="card__label">大格口 5L<span class="rec-tag">AI推荐</span></p>
+      <div class="grid grid--l" id="gridL"></div>
+    </section>
+
+    <ul class="legend">
+      <li><i style="background:#D4F8E0"></i>空闲</li>
+      <li><i style="background:#D1CF50"></i>已预约</li>
+      <li><i style="background:#539CD8"></i>使用中</li>
+      <li><i style="background:#B1BBC4"></i>故障</li>
+    </ul>
+
+    <button class="pay-btn" type="button" id="payBtn">支付押金并预约</button>
+
+    <div class="loading" id="loading" hidden>
+      <p class="loading__text">创建订单中...</p>
+      <div class="spinner" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+  </main>
+
+<script>
+  (function () {
+
+    /* ---------------- 1. 生成 25 个格口 ---------------- */
+    var zones = [
+      { boxId: 'gridS', prefix: 'C', count: 10 },   /* 小 1.5L  C01-C10 */
+      { boxId: 'gridM', prefix: 'D', count: 10 },   /* 中 3L    D01-D10 */
+      { boxId: 'gridL', prefix: 'E', count: 5  }    /* 大 5L    E01-E05 */
+    ];
+
+    zones.forEach(function (zone) {
+      var box = document.getElementById(zone.boxId);
+      for (var i = 1; i <= zone.count; i++) {
+        var code = zone.prefix + (i < 10 ? '0' + i : i);
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cell';
+        cell.dataset.code = code;
+        cell.textContent = code;
+        box.appendChild(cell);
+      }
+    });
+
+    var allCells = Array.prototype.slice.call(document.querySelectorAll('.cell'));
+
+    /* ---------------- 2. 单选逻辑 ---------------- */
+    allCells.forEach(function (cell) {
+      cell.addEventListener('click', function () {
+        allCells.forEach(function (c) { c.classList.remove('is-selected'); });
+        cell.classList.add('is-selected');
+
+        /* 记录所选格口编号，供 checkout.html 读取 */
+        try {
+          localStorage.setItem('selectedGrid', cell.dataset.code);
+        } catch (e) {}
+      });
+    });
+
+    /* ---------------- 3. AI 推荐联动 ----------------
+       读取 review.html 存入的 recommended_grid（S / M / L），
+       S → C 区、M → D 区、L → E 区，在高亮该区第一个格口。
+       若没有推荐数据，则页面保持全绿，不做任何标记。            */
+    var recommendGrid = '';
+    try {
+      recommendGrid = localStorage.getItem('sf_recommended_grid') ||
+                      sessionStorage.getItem('sf_recommended_grid') || '';
+    } catch (e) {
+      recommendGrid = '';
+    }
+
+    recommendGrid = String(recommendGrid).trim().toUpperCase();
+
+    var prefixMap = { S: 'C', M: 'D', L: 'E' };
+    var prefix = prefixMap[recommendGrid];
+
+    if (prefix) {
+      /* 整区格口描边 */
+      Array.prototype.slice.call(
+        document.querySelectorAll('.cell[data-code^="' + prefix + '"]')
+      ).forEach(function (c) { c.classList.add('is-rec-zone'); });
+
+      /* 区块标题旁显示「AI推荐」标签 */
+      var card = document.querySelector('.card--' + recommendGrid.toLowerCase());
+      if (card) card.classList.add('is-rec');
+    }
+
+    /* ---------------- 4. 支付押金 → 创建订单 ---------------- */
+    var payBtn  = document.getElementById('payBtn');
+    var loading = document.getElementById('loading');
+
+    payBtn.addEventListener('click', function () {
+      var selected = document.querySelector('.cell.is-selected');
+
+      if (!selected) {
+        alert('请先选择一个格口');
+        return;
+      }
+
+      loading.hidden = false;
+
+      /* 模拟订单创建耗时，1 秒后进入结算页 */
+      setTimeout(function () {
+        window.location.href = 'checkout.html';
+      }, 1000);
+    });
+
+  })();
+</script>
+
+</body>
+</html>
