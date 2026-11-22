@@ -274,6 +274,11 @@
     var orderState = '已完成';
     try {
       if (localStorage.getItem('sf_terminated')) orderState = '已终止';
+
+      /* 进入结算页即标记“待支付”，支付成功后清除 */
+      if (localStorage.getItem('sf_start_time')) {
+        localStorage.setItem('sf_pending_pay', '1');
+      }
     } catch (e) {}
 
     if (orderState === '已终止') {
@@ -332,6 +337,7 @@
           localStorage.removeItem('sf_order_no');
           localStorage.removeItem('selectedGrid');
           localStorage.removeItem('sf_terminated');
+          localStorage.removeItem('sf_pending_pay');
         } catch (e) {}
         window.location.href = 'index.html';
       }, 2000);

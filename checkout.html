@@ -209,6 +209,12 @@
     payBtn.addEventListener('click', function () {
       payBtn.disabled = true;          /* 防止连点重复下单 */
 
+      /* 押金已付：落一条“待使用”订单的时间戳，并清掉上一单的待支付标记 */
+      try {
+        localStorage.setItem('sf_order_created', Date.now());
+        localStorage.removeItem('sf_pending_pay');
+      } catch (e) {}
+
       paidToast.hidden = false;
 
       /* 按要求延时 200ms 后进入开锁页 */

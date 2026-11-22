@@ -243,17 +243,41 @@
 
     /* 当前进行中 */
     var grid    = localStorage.getItem('selectedGrid');
-    var startTs = Number(localStorage.getItem('sf_start_time'));
     var orderNo = localStorage.getItem('sf_order_no');
+    var created = Number(localStorage.getItem('sf_order_created'));
+    var startTs = Number(localStorage.getItem('sf_start_time'));
+    var pending = localStorage.getItem('sf_pending_pay') === '1';
 
-    if (grid && startTs) {
+    if (grid && orderNo) {
+      var state, filter, stamp, href;
+
+      if (startTs && pending) {
+        /* 已结束计时但还没付款 */
+        state  = '待支付';
+        filter = 'pay';
+        stamp  = startTs;
+        href   = 'settle.html';
+      } else if (startTs) {
+        state  = '使用中';
+        filter = 'using';
+        stamp  = startTs;
+        href   = 'using.html';
+      } else {
+        /* 已付押金、还没开锁 */
+        state  = '待使用';
+        filter = 'todo';
+        stamp  = created || Date.now();
+        href   = 'unlock.html';
+      }
+
       orders.push({
         code:  grid,
-        state: '使用中',
-        filter: 'using',
-        no:    orderNo || '—',
-        time:  hm(startTs),
-        endTime: ''
+        state: state,
+        filter: filter,
+        no:    orderNo,
+        time:  hm(stamp),
+        endTime: '',
+        href:  href
       });
     }
 
@@ -291,9 +315,9 @@
       listEl.innerHTML = shown.map(function (o) {
         var timeLine = o.endTime ? (o.time + ' - ' + o.endTime) : o.time;
 
-        var foot = o.filter === 'using'
+        var foot = o.href
           ? '<div class="order__foot">' +
-              '<a class="order__btn" href="using.html">查看详情</a>' +
+              '<a class="order__btn" href="' + o.href + '">查看详情</a>' +
             '</div>'
           : '';
 
