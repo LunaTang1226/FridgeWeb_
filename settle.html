@@ -318,13 +318,14 @@
           if (!Array.isArray(list)) list = [];
 
           list.unshift({
-            code:  localStorage.getItem('selectedGrid') || '',
-            no:    localStorage.getItem('sf_order_no') || '',
-            start: start,
-            end:   end,
-            secs:  Math.floor(ms / 1000),
-            fee:   Number(((ms / 3600000) * 0.05).toFixed(2)),
-            state: orderState
+            code:     localStorage.getItem('selectedGrid') || '',
+            no:       localStorage.getItem('sf_order_no') || '',
+            category: localStorage.getItem('sf_category') || '',
+            start:    start,
+            end:      end,
+            secs:     Math.floor(ms / 1000),
+            fee:      Number(((ms / 3600000) * 0.05).toFixed(2)),
+            state:    orderState
           });
 
           localStorage.setItem('sf_orders', JSON.stringify(list.slice(0, 50)));

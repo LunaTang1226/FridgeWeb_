@@ -324,6 +324,40 @@
 
   .fetch-btn:disabled { opacity: .5; cursor: default; }
 
+  /* ============ 数据概览 ============ */
+  .overview {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .overview__title {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+    margin-bottom: 10px;
+  }
+
+  .overview__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: #7B8087;
+  }
+
+  .overview__row b {
+    font-weight: 700;
+    color: #000000;
+    text-align: right;
+  }
+
   .demo-note {
     margin-top: 14px;
     font-size: 11px;
@@ -359,6 +393,7 @@
     <div class="panel" id="panel-orders"></div>
 
     <div class="panel" id="panel-device" hidden>
+      <div class="overview" id="overview"></div>
       <div class="result-card is-empty" id="deviceResult">尚未获取，点击下方按钮生成体检单</div>
       <button class="fetch-btn" type="button" id="deviceBtn">获取设备体检单</button>
       <p class="demo-note">调用 /api/analyze，单次约 10~30 秒</p>
@@ -437,6 +472,7 @@
             list.push({
               no: o.no || '—', code: o.code || '—', live: false,
               start: o.start, secs: o.secs, fee: o.fee,
+              category: o.category || '',
               state: o.state || '已完成'
             });
           });
@@ -580,7 +616,59 @@
       });
     }
 
+    /* ================= 数据概览（物品 / 格口 / 响应时间） ================= */
+    function renderOverview() {
+      var el = document.getElementById('overview');
+      if (!el) return;
+
+      var orders = loadOrders();
+
+      /* 物品 TOP3 */
+      var cat = {};
+      orders.forEach(function (o) {
+        if (!o.category) return;
+        cat[o.category] = (cat[o.category] || 0) + 1;
+      });
+
+      var catList = Object.keys(cat).map(function (k) {
+        return { name: k, n: cat[k] };
+      }).sort(function (a, b) {
+        return b.n - a.n;
+      }).slice(0, 3);
+
+      /* 格口按大小分类 */
+      var size = { C: 0, D: 0, E: 0 };
+      orders.forEach(function (o) {
+        var p = (o.code || '').charAt(0).toUpperCase();
+        if (size[p] !== undefined) size[p] += 1;
+      });
+
+      /* AI 平均响应时间 */
+      var lat = [];
+      try { lat = JSON.parse(localStorage.getItem('sf_latency') || '[]'); } catch (e) {}
+      if (!Array.isArray(lat)) lat = [];
+
+      var avg = lat.length
+        ? Math.round(lat.reduce(function (a, b) { return a + b; }, 0) / lat.length)
+        : 0;
+
+      el.innerHTML =
+        '<p class="overview__title">数据概览</p>' +
+        '<div class="overview__row"><span>存放物品 TOP3</span><b>' +
+          (catList.length
+            ? catList.map(function (c) { return c.name + ' ×' + c.n; }).join('、')
+            : '暂无') +
+        '</b></div>' +
+        '<div class="overview__row"><span>格口选择</span><b>小 ' + size.C +
+          '　中 ' + size.D + '　大 ' + size.E +
+        '</b></div>' +
+        '<div class="overview__row"><span>AI 平均响应</span><b>' +
+          (avg ? avg + ' ms' : '暂无') +
+        '</b></div>';
+    }
+
     renderOrders();
+    renderOverview();
 
     /* ================= 4. 标签切换 ================= */
     var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
@@ -598,6 +686,8 @@
         Object.keys(panels).forEach(function (key) {
           panels[key].hidden = (key !== btn.dataset.tab);
         });
+
+        if (btn.dataset.tab === 'device') renderOverview();
       });
     });
 

@@ -316,10 +316,20 @@
       if (!realBase64) realBase64 = fakeImageBase64;
 
       if (USE_REAL_API) {
+        var t0 = Date.now();
         var real = await requestReal(realBase64);
+        var cost = Date.now() - t0;
 
         if (real) {
           data = real;
+
+          /* 记录本次识别耗时（毫秒），保留最近 10 次 */
+          try {
+            var lat = JSON.parse(localStorage.getItem('sf_latency') || '[]');
+            if (!Array.isArray(lat)) lat = [];
+            lat.unshift(cost);
+            localStorage.setItem('sf_latency', JSON.stringify(lat.slice(0, 10)));
+          } catch (e) {}
         } else {
           /* 隧道断了 / 超时 / 5xx / 跨域 / 字段异常：自动降级，流程继续 */
           console.log('[review] AI 接口不可用，已降级为本地模拟结果');
