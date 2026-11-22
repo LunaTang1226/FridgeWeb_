@@ -454,14 +454,35 @@
     function loadOrders() {
       var list = [];
 
-      var grid  = localStorage.getItem('selectedGrid');
-      var start = Number(localStorage.getItem('sf_start_time'));
-      var no    = localStorage.getItem('sf_order_no');
+      var grid    = localStorage.getItem('selectedGrid');
+      var no      = localStorage.getItem('sf_order_no');
+      var created = Number(localStorage.getItem('sf_order_created'));
+      var start   = Number(localStorage.getItem('sf_start_time'));
+      var pending = localStorage.getItem('sf_pending_pay') === '1';
 
-      if (grid && start) {
+      if (grid && no) {
+        var state, base;
+
+        if (start && pending) {
+          state = '待支付';
+          base  = start;
+        } else if (start) {
+          state = '使用中';
+          base  = start;
+        } else {
+          state = '待使用';
+          base  = created || Date.now();
+        }
+
         list.push({
-          no: no || '—', code: grid, live: true,
-          start: start, secs: Math.floor((Date.now() - start) / 1000), fee: 0
+          no:       no,
+          code:     grid,
+          live:     true,
+          state:    state,
+          start:    base,
+          secs:     start ? Math.floor((Date.now() - start) / 1000) : 0,
+          fee:      0,
+          category: localStorage.getItem('sf_category') || ''
         });
       }
 
@@ -554,8 +575,11 @@
         orders.forEach(function (o, i) {
           var killed = (term && term.no && term.no === o.no) || o.state === '已终止';
 
-          var stateText = killed ? '已终止' : (o.live ? '使用中' : '已完成');
-          var stateCls  = killed ? 'is-kill' : (o.live ? '' : 'is-off');
+          var stateText = killed ? '已终止' : (o.state || '已完成');
+          var stateCls  = killed ? 'is-kill'
+                        : o.state === '待支付' ? 'is-kill'
+                        : o.live ? ''
+                        : 'is-off';
 
           html += '<article class="order' + (killed ? ' is-terminated' : '') + '">' +
             '<div class="order__head">' +
@@ -568,7 +592,7 @@
               (o.fee ? '　费用 ¥ ' + Number(o.fee).toFixed(2) : '') +
             '</p>';
 
-          if (o.live && !killed) {
+          if (!killed && o.state !== '已完成') {
             html += '<button class="order__stop" type="button" data-idx="' + i + '">强行终止</button>';
           }
 
