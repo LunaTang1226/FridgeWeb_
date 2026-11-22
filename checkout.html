@@ -206,6 +206,27 @@
     var payBtn    = document.getElementById('payBtn');
     var paidToast = document.getElementById('paidToast');
 
+    var API = 'https://supposed-monster-diversity-tourist.trycloudflare.com';
+
+    function api(method, path, body) {
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 8000);
+
+      return fetch(API + path, {
+        method:  method,
+        headers: { 'Content-Type': 'application/json' },
+        body:    body === undefined ? undefined : JSON.stringify(body),
+        signal:  ctrl.signal
+      })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+          return data;
+        });
+      })
+      .finally(function () { clearTimeout(timer); });
+    }
+
     payBtn.addEventListener('click', function () {
       payBtn.disabled = true;          /* 防止连点重复下单 */
 
@@ -217,10 +238,24 @@
 
       paidToast.hidden = false;
 
-      /* 按要求延时 200ms 后进入开锁页 */
-      setTimeout(function () {
+      /* 真实建单 + 缴押金；失败只打印，不影响流程 */
+      var real = api('POST', '/api/order/create', {})
+        .then(function (o) {
+          return api('POST', '/api/order/' + o.orderId + '/deposit', {})
+            .then(function () {
+              try { localStorage.setItem('sf_real_order', o.orderId); } catch (e) {}
+            });
+        })
+        .catch(function () {
+          console.log('[checkout] 真实建单失败，已跳过');
+        });
+
+      /* 弹窗至少停 2 秒，并等真实建单结束再跳 */
+      var minWait = new Promise(function (resolve) { setTimeout(resolve, 2000); });
+
+      Promise.all([minWait, real]).then(function () {
         window.location.href = 'unlock.html';
-      }, 2000);
+      });
     });
 
   })();

@@ -304,6 +304,27 @@
       '¥ ' + ((ms / 3600000) * 0.05).toFixed(2);
 
     /* 支付成功后停留 2 秒回首页，并清空本次计时 */
+    var API = 'https://supposed-monster-diversity-tourist.trycloudflare.com';
+
+    function api(method, path, body) {
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+
+      return fetch(API + path, {
+        method:  method,
+        headers: { 'Content-Type': 'application/json' },
+        body:    body === undefined ? undefined : JSON.stringify(body),
+        signal:  ctrl.signal
+      })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+          return data;
+        });
+      })
+      .finally(function () { clearTimeout(timer); });
+    }
+
     var payBtn = document.getElementById('payBtn');
     var toast  = document.getElementById('toast');
 
@@ -311,7 +332,18 @@
       payBtn.disabled = true;
       toast.hidden = false;
 
-      setTimeout(function () {
+      /* 真实关单（失败忽略，不阻塞跳转） */
+      var realId = '';
+      try { realId = localStorage.getItem('sf_real_order') || ''; } catch (e) {}
+
+      var closeReal = realId
+        ? api('POST', '/api/order/' + realId + '/end', {}).catch(function () {})
+        : Promise.resolve();
+
+      Promise.all([
+        closeReal,
+        new Promise(function (resolve) { setTimeout(resolve, 2000); })
+      ]).then(function () {
         /* 先把这一单归档成历史记录 */
         try {
           var list = JSON.parse(localStorage.getItem('sf_orders') || '[]');
@@ -339,9 +371,10 @@
           localStorage.removeItem('selectedGrid');
           localStorage.removeItem('sf_terminated');
           localStorage.removeItem('sf_pending_pay');
+          localStorage.removeItem('sf_real_order');
         } catch (e) {}
         window.location.href = 'index.html';
-      }, 2000);
+      });
     });
 
   })();

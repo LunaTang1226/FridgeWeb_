@@ -304,19 +304,71 @@
       pwdInput.focus();
     });
 
-    function runUnlock() {
+    var API = 'https://supposed-monster-diversity-tourist.trycloudflare.com';
+
+    function api(method, path, body) {
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+
+      return fetch(API + path, {
+        method:  method,
+        headers: { 'Content-Type': 'application/json' },
+        body:    body === undefined ? undefined : JSON.stringify(body),
+        signal:  ctrl.signal
+      })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+          return data;
+        });
+      })
+      .finally(function () { clearTimeout(timer); });
+    }
+
+    function sleep(ms) {
+      return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    /* 真实开门：成功返回 true，任何失败返回 false */
+    async function realOpen() {
+      var orderId = '';
+      try { orderId = localStorage.getItem('sf_real_order') || ''; } catch (e) {}
+      if (!orderId) return false;
+
+      try {
+        var op = await api('POST', '/api/open', { orderId: orderId });
+
+        for (var i = 0; i < 15; i++) {
+          await sleep(400);
+          var t = await api('GET', '/api/task/' + op.taskId);
+          if (t.status === 'done')   return t.result === 'OK';
+          if (t.status === 'failed') return false;
+        }
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function runUnlock() {
       toast.hidden = false;
       toastText.textContent = '正在开锁...';
       spinner.hidden = false;
 
-      setTimeout(function () {
-        toastText.textContent = '开锁成功';
-        spinner.hidden = true;
+      var ok = await realOpen();
 
-        setTimeout(function () {
-          window.location.href = 'using.html';
-        }, 800);
-      }, 1600);
+      if (!ok) {
+        /* 降级：至少让「正在开锁」显示 1.2 秒 */
+        console.log('[unlock] 真实开锁不可用，已降级为模拟');
+        await sleep(1200);
+      }
+
+      toastText.textContent = '开锁成功';
+      spinner.hidden = true;
+
+      setTimeout(function () {
+        window.location.href = 'using.html';
+      }, 800);
     }
 
     document.getElementById('bleBtn').addEventListener('click', function (e) {
