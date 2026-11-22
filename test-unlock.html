@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
+<title>开锁链路测试</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:   #EBEDF1;
+    --brand:#205285;
+    --ok:   #2E7D32;
+    --fail: #C0392B;
+    --wait: #8A8A8A;
+  }
+
+  body {
+    min-width: 375px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    background: #C9CDD4;
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    position: relative;
+    width: 375px;
+    height: 826px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .title {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: #000000;
+  }
+
+  .sub {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1.4;
+    color: #8A8A8A;
+  }
+
+  .run-btn {
+    margin: 18px auto 0;
+    width: 265px;
+    height: 48px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--brand);
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    flex: none;
+  }
+
+  .run-btn:disabled { opacity: .5; cursor: default; }
+
+  .list {
+    margin-top: 16px;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 24px;
+  }
+
+  .row {
+    background: #FFFFFF;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  .row.ok    { color: var(--ok); }
+  .row.fail  { color: var(--fail); }
+  .row.wait  { color: var(--wait); }
+
+  .row b { font-weight: 700; }
+</style>
+</head>
+<body>
+
+  <main class="phone">
+
+    <h1 class="title">开锁链路测试</h1>
+    <p class="sub">依次调用 session → create → deposit → open → task → end</p>
+
+    <button class="run-btn" type="button" id="runBtn">开始测试</button>
+
+    <div class="list" id="list"></div>
+
+  </main>
+
+<script>
+  (function () {
+
+    var BASE = 'https://supposed-monster-diversity-tourist.trycloudflare.com';
+    var listEl = document.getElementById('list');
+    var runBtn = document.getElementById('runBtn');
+
+    function log(step, cls, text) {
+      var row = document.createElement('div');
+      row.className = 'row ' + cls;
+      row.innerHTML = '<b>' + step + '</b>　' + text;
+      listEl.appendChild(row);
+      listEl.scrollTop = listEl.scrollHeight;
+      return row;
+    }
+
+    function setRow(row, cls, text) {
+      row.className = 'row ' + cls;
+      row.innerHTML = text;
+    }
+
+    async function call(method, path, body) {
+      var res = await fetch(BASE + path, {
+        method:  method,
+        headers: { 'Content-Type': 'application/json' },
+        body:    body === undefined ? undefined : JSON.stringify(body)
+      });
+
+      var data = {};
+      try { data = await res.json(); } catch (e) {}
+
+      if (!res.ok) {
+        var err = new Error(data.message || ('HTTP ' + res.status));
+        err.code = data.error || '';
+        throw err;
+      }
+      return data;
+    }
+
+    async function run() {
+      listEl.innerHTML = '';
+      runBtn.disabled = true;
+
+      var orderId = '';
+
+      try {
+        /* ① session */
+        var r1 = log('① session', 'wait', '查询中...');
+        var s = await call('GET', '/api/session');
+        setRow(r1, 'ok',
+          '<b>① session</b>　gateway.online = <b>' + s.gateway.online + '</b>，押金 ' + s.deposit);
+
+        if (!s.gateway.online) {
+          log('⚠ 提示', 'fail', '通道离线，后面的 open 会返回 503');
+        }
+
+        /* ② create */
+        var r2 = log('② create', 'wait', '创建订单...');
+        var o = await call('POST', '/api/order/create', {});
+        orderId = o.orderId;
+        setRow(r2, 'ok',
+          '<b>② create</b>　orderId = ' + o.orderId + '，status = ' + o.status);
+
+        /* ③ deposit */
+        var r3 = log('③ deposit', 'wait', '缴纳押金...');
+        var d = await call('POST', '/api/order/' + orderId + '/deposit', {});
+        setRow(r3, 'ok', '<b>③ deposit</b>　status = ' + d.status);
+
+        /* ④ open */
+        var r4 = log('④ open', 'wait', '发起开门...');
+        var op = await call('POST', '/api/open', { orderId: orderId });
+        setRow(r4, 'ok', '<b>④ open</b>　taskId = ' + op.taskId);
+
+        /* ⑤ task */
+        var r5 = log('⑤ task', 'wait', '轮询结果（最多 10 秒）...');
+        var task = null;
+
+        for (var i = 0; i < 25; i++) {
+          await new Promise(function (resolve) { setTimeout(resolve, 400); });
+          var t = await call('GET', '/api/task/' + op.taskId);
+
+          if (t.status === 'done') { task = t; break; }
+          if (t.status === 'failed') {
+            throw Object.assign(new Error('开门失败：' + (t.reason || '通道无响应')), { code: 'task_failed' });
+          }
+        }
+
+        if (!task) throw new Error('等待超时（约 10 秒）');
+
+        setRow(r5, 'ok',
+          '<b>⑤ task</b>　result = <b>' + task.result + '</b>，reason = ' + task.reason);
+
+        /* ⑥ end */
+        var r6 = log('⑥ end', 'wait', '结束订单...');
+        var e = await call('POST', '/api/order/' + orderId + '/end', {});
+        setRow(r6, 'ok', '<b>⑥ end</b>　status = ' + e.status);
+
+        log('✅ 全部完成', 'ok',
+          task.result === 'OK' ? '门锁返回 OK，链路通' : '门锁返回 ' + task.result);
+
+      } catch (err) {
+        var msg = err.message || '未知错误';
+        if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+          msg = '网络请求失败（跨域被拦 / 服务未启动 / 域名已过期）';
+        }
+
+        log('❌ 失败', 'fail',
+          (err.code ? '<b>' + err.code + '</b> · ' : '') + msg +
+          (orderId ? '<br>已创建的 orderId：' + orderId : ''));
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    runBtn.addEventListener('click', run);
+
+  })();
+</script>
+
+</body>
+</html>
