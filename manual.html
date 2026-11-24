@@ -10,7 +10,7 @@
 
   :root {
     --brand:    #205285;   /* 深蓝，勾选框选中态 */
-    --bg:       #EBEDF1;   /* 与首页一致的页面底色 */
+    --bg:       #F2F4F7;   /* 与首页一致的页面底色 */
     --ink:      #000000;
     --line:     #DDDADA;   /* 分割线 */
     --warn:     #AB3737;   /* 红色提示 */
@@ -173,8 +173,13 @@
     font-size: 12px;
     font-weight: 400;
     line-height: 1.4;
-    color: var(--ink);
-    opacity: .62;
+    color: rgba(0, 0, 0, .62);
+  }
+
+  /* 协议链接：蓝色 + 下划线 */
+  .doc-link {
+    color: var(--brand);
+    text-decoration: underline;
   }
 
   /* 原生 checkbox 重绘：默认灰框白底 */
@@ -285,7 +290,7 @@
     <div class="footer">
       <label class="agree-row">
         <input class="agree" type="checkbox">
-        <span class="agree-row__text">我已阅读并同意《用户服务协议》和《隐私政策》</span>
+        <span class="agree-row__text">我已阅读并同意<a class="doc-link" href="terms.html">《用户服务协议》</a>和<a class="doc-link" href="privacy.html">《隐私政策》</a></span>
       </label>
 
       <!-- 勾选后此链接才可点击，跳转 booking 页 -->
@@ -293,6 +298,8 @@
     </div>
 
   </main>
+
+<script src="zoom.js"></script>
 
 </body>
 </html>

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
 <title>AI 审核</title>
+<script src="config.js"></script>
 <style>
   /* ============ 全局 ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +12,7 @@
   [hidden] { display: none !important; }
 
   :root {
-    --bg:    #EBEDF1;   /* 与前几页完全一致 */
+    --bg:    #F2F4F7;   /* 与前几页完全一致 */
     --btn:   #B2D2EA;
     --ink:   #030405;
     --spin:  #1296DB;   /* 转圈图标 */
@@ -285,7 +286,7 @@
       var timer = setTimeout(function () { ctrl.abort(); }, 20000);
 
       try {
-        var res = await fetch('https://dear-plasma-appreciation-deer.trycloudflare.com/api/vision', {
+        var res = await fetch(FRIDGE_API.vision + '/api/vision', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ image_base64: base64 }),
@@ -368,6 +369,8 @@
 
   })();
 </script>
+
+<script src="zoom.js"></script>
 
 </body>
 </html>

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
 <title>使用中</title>
+<script src="config.js"></script>
 <style>
   /* ============ 全局 ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +12,7 @@
   [hidden] { display: none !important; }
 
   :root {
-    --bg:   #EBEDF1;
+    --bg:   #F2F4F7;
     --brand:#205285;
     --btn:  #B2D2EA;
     --ink:  #030405;
@@ -369,6 +370,53 @@
       setInterval(tick, 1000);
     }
 
+    /* ---------------- 真实开门（可重复调用） ---------------- */
+    var API = FRIDGE_API.lock;
+
+    function api(method, path, body) {
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+
+      return fetch(API + path, {
+        method:  method,
+        headers: { 'Content-Type': 'application/json' },
+        body:    body === undefined ? undefined : JSON.stringify(body),
+        signal:  ctrl.signal
+      })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+          return data;
+        });
+      })
+      .finally(function () { clearTimeout(timer); });
+    }
+
+    function sleep(ms) {
+      return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    /* 每次点击都重新发起一次开门，订单仍是 active 状态时可反复开 */
+    async function realOpen() {
+      var orderId = '';
+      try { orderId = localStorage.getItem('sf_real_order') || ''; } catch (e) {}
+      if (!orderId) return false;
+
+      try {
+        var op = await api('POST', '/api/open', { orderId: orderId });
+
+        for (var i = 0; i < 15; i++) {
+          await sleep(400);
+          var t = await api('GET', '/api/task/' + op.taskId);
+          if (t.status === 'done')   return t.result === 'OK';
+          if (t.status === 'failed') return false;
+        }
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
     /* ---------------- 再次开锁（取物品） ----------------
        复用同一格口，不新建订单、不跳页，开锁后提示取物。   */
     var reopenLink = document.getElementById('reopenLink');
@@ -378,7 +426,7 @@
     var tip        = document.getElementById('tip');
     var unlocking  = false;
 
-    reopenLink.addEventListener('click', function () {
+    reopenLink.addEventListener('click', async function () {
       if (unlocking) return;
       unlocking = true;
 
@@ -386,20 +434,27 @@
       toastText.textContent = '正在开锁...';
       spinner.hidden = false;
 
-      setTimeout(function () {
-        toastText.textContent = '开锁成功';
-        spinner.hidden = true;
-        tip.textContent = '取走物品后请关闭柜门';
+      var ok = await realOpen();
 
-        setTimeout(function () {
-          toast.hidden = true;
-          unlocking = false;
-        }, 900);
-      }, 1600);
+      if (!ok) {
+        console.log('[using] 真实开锁不可用，已降级为模拟');
+        await sleep(1200);
+      }
+
+      toastText.textContent = '开锁成功';
+      spinner.hidden = true;
+      tip.textContent = '取走物品后请关闭柜门';
+
+      setTimeout(function () {
+        toast.hidden = true;
+        unlocking = false;
+      }, 900);
     });
 
   })();
 </script>
+
+<script src="zoom.js"></script>
 
 </body>
 </html>

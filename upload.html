@@ -9,7 +9,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg:    #EBEDF1;   /* 与首页 / 手册页完全一致 */
+    --bg:    #F2F4F7;   /* 与首页 / 手册页完全一致 */
     --blue:  #3466CA;   /* 虚线框描边 + 相机图标 */
     --btn:   #B2D2EA;   /* 主按钮底色 */
     --ink:   #030405;
@@ -63,6 +63,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
   }
 
   .dropzone svg {
@@ -205,6 +206,9 @@
 
     uploadBtn.addEventListener('click', openSheet);
 
+    /* 虚线框本身也可以点击唤起弹窗 */
+    document.querySelector('.dropzone').addEventListener('click', openSheet);
+
     cancelBtn.addEventListener('click', function (e) {
       e.preventDefault();      // 阻止 href="#" 跳到页面顶部
       closeSheet();
@@ -264,6 +268,8 @@
     });
   })();
 </script>
+
+<script src="zoom.js"></script>
 
 </body>
 </html>

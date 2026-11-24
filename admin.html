@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
 <title>管理员</title>
+<script src="config.js"></script>
 <style>
   /* ============ 全局 ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +12,7 @@
   [hidden] { display: none !important; }
 
   :root {
-    --bg:     #EBEDF1;
+    --bg:     #F2F4F7;
     --brand:  #205285;
     --card:   #FFFFFF;
     --ink:    #030405;
@@ -763,7 +764,7 @@
     }
 
     bindFetch('deviceBtn', 'deviceResult',
-      'https://extensions-pas-throws-coalition.trycloudflare.com/api/analyze',
+      FRIDGE_API.data + '/api/analyze',
       function () {
         var orders = loadOrders();
         return {
@@ -779,7 +780,7 @@
       '获取设备体检单');
 
     bindFetch('demandBtn', 'demandResult',
-      'https://extensions-pas-throws-coalition.trycloudflare.com/api/user_demand',
+      FRIDGE_API.data + '/api/user_demand',
       function () {
         return {
           device_id: 'Fridge-B12',
@@ -796,6 +797,8 @@
 
   })();
 </script>
+
+<script src="zoom.js"></script>
 
 </body>
 </html>

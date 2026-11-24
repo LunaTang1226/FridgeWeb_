@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=375, initial-scale=1.0, viewport-fit=cover">
 <title>预约成功</title>
+<script src="config.js"></script>
 <style>
   /* ============ 全局 ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +12,7 @@
   [hidden] { display: none !important; }
 
   :root {
-    --bg:   #EBEDF1;
+    --bg:   #F2F4F7;
     --brand:#205285;
     --btn:  #B2D2EA;
     --ink:  #030405;
@@ -304,7 +305,7 @@
       pwdInput.focus();
     });
 
-    var API = 'https://supposed-monster-diversity-tourist.trycloudflare.com';
+    var API = FRIDGE_API.lock;
 
     function api(method, path, body) {
       var ctrl  = new AbortController();
@@ -407,6 +408,8 @@
 
   })();
 </script>
+
+<script src="zoom.js"></script>
 
 </body>
 </html>
