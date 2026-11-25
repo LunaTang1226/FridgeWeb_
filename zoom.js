@@ -1,6 +1,6 @@
-/* 让 375×826 的画布适配任意手机屏幕。
-   做法：把 .phone 放进一个外包盒，盒子的尺寸 = 缩放后的视觉尺寸，
-   .phone 用 transform 缩放（原点左上）。这样居中、滚动区域都是准的。 */
+/* 页面适配：
+   - 手机（窄屏）：宽度铺满，按比例放大，纵向可滚动——不再有两侧灰边
+   - 桌面（宽屏）：保持原来的"手机放在灰色背景里看预览"的效果 */
 (function () {
   var phone = document.querySelector('.phone');
   if (!phone) return;
@@ -8,17 +8,18 @@
 
   var body = document.body;
 
-  /* 去掉桌面预览用的最小尺寸/外边距，顶部对齐 */
+  var BASE_W = phone.offsetWidth || 375;
+  var BASE_H = phone.offsetHeight || 826;
+  var pageBg = getComputedStyle(phone).backgroundColor || '#F2F4F7';
+
+  /* 去掉桌面预览用的最小尺寸/内边距 */
   body.style.minWidth = '0';
   body.style.minHeight = '0';
   body.style.margin = '0';
   body.style.padding = '0';
   body.style.alignItems = 'flex-start';
   body.style.overflowX = 'hidden';
-  body.style.overflowY = 'auto';   /* 兜底：算大了也能滑到底，不会卡死 */
-
-  var BASE_W = phone.offsetWidth || 375;
-  var BASE_H = phone.offsetHeight || 826;
+  body.style.overflowY = 'auto';
 
   var wrap = document.createElement('div');
   wrap.className = '__fitwrap';
@@ -41,11 +42,23 @@
     );
     if (!vh || vh > 2000) vh = 800;
 
-    /* 保守预留 56px 给浏览器地址栏/工具栏：宁可算小，不算大 */
-    var usable = vh - 56;
-    if (usable < 480) usable = vh;
+    var mobile = vw <= 600;
+    var s;
 
-    var s = Math.min(vw / BASE_W, usable / BASE_H, 1.15) * 0.97;
+    if (mobile) {
+      /* 手机：铺满宽度，高度按比例自然增长（超出就上下滑） */
+      s = vw / BASE_W;
+      body.style.background = pageBg;   /* 滑到底也不露灰边 */
+      phone.style.boxShadow = 'none';
+      wrap.style.marginTop = '0';
+    } else {
+      /* 桌面：整幅放进视口，居中，保留灰色背景预览 */
+      s = Math.min(vw / BASE_W, (vh - 80) / BASE_H, 1.15);
+      body.style.background = '#C9CDD4';
+      wrap.style.marginTop = '40px';
+    }
+
+    if (!s || !isFinite(s) || s <= 0) s = 1;
 
     wrap.style.width = (BASE_W * s) + 'px';
     wrap.style.height = (BASE_H * s) + 'px';
