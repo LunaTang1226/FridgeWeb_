@@ -41,9 +41,20 @@
     width: 375px;
     height: 826px;
     background: var(--bg);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;                  /* 这一页内容比一屏高：自己可上下滑动 */
+    scrollbar-width: none;
     box-shadow: 0 8px 32px rgba(0, 0, 0, .10);
   }
+
+  /* 撑出滚动范围：内容底 708 + 悬浮按钮占位 120 */
+  .phone::after {
+    content: "";
+    display: block;
+    height: 828px;
+  }
+
+  .phone::-webkit-scrollbar { display: none; }
 
   /* ============ 页面标题 ============ */
   .title {
@@ -209,7 +220,8 @@
 
   /* ============ 底部按钮 ============ */
   .pay-btn {
-    position: absolute;
+    position: absolute;                 /* 位置由脚本按滚动偏移补偿，视觉上始终悬浮底部 */
+    z-index: 5;
     left: 55px;
     bottom: 60px;
     width: 265px;
@@ -419,6 +431,32 @@
 </script>
 
 <script src="zoom.js"></script>
+
+<script>
+  /* 悬浮按钮：内容上下滚动时，始终贴在画布可视区底部 */
+  (function () {
+    var phone = document.querySelector('.phone');
+    var btn = document.getElementById('payBtn');
+    if (!phone || !btn) return;
+
+    var gap = parseFloat(getComputedStyle(btn).bottom) || 60;
+    var bh = btn.offsetHeight || 48;
+
+    function place() {
+      var h = phone.clientHeight;
+      btn.style.bottom = 'auto';
+      btn.style.top = (phone.scrollTop + h - gap - bh) + 'px';
+    }
+
+    function onScroll() { place(); }
+
+    phone.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', place);
+    window.addEventListener('orientationchange', place);
+
+    place();
+  })();
+</script>
 
 </body>
 </html>

@@ -123,7 +123,9 @@
           lastKey = key;
           phone.style.height = cand + 'px';
           var need = contentBottom() + tabbarHeight() + 4;
-          if (need > cand) cand = BASE_H;   /* 放不下就退回原高度，允许滚动 */
+          /* 页面自己带滚动（overflow-y:auto/scroll，如选择格口页）时不用退回，压缩即可 */
+          var selfScroll = /auto|scroll/.test(getComputedStyle(phone).overflowY);
+          if (need > cand && !selfScroll) cand = BASE_H;
         }
         h = cand;
       }
