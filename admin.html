@@ -377,9 +377,9 @@
       <div class="login__box">
         <p class="login__title">管理员登录</p>
         <input class="login__input" id="loginPwd" type="password"
-               placeholder="请输入管理员口令" autocomplete="off">
+               placeholder="请输入管理员令牌" autocomplete="off">
         <button class="login__btn" type="button" id="loginBtn">进入后台</button>
-        <p class="login__hint">演示口令 admin</p>
+        <p class="login__hint">令牌由硬件同学提供 · 连不上可进离线演示</p>
       </div>
     </div>
 
@@ -411,27 +411,150 @@
 <script>
   (function () {
 
-    /* ================= 1. 登录 ================= */
+    /* ================= 0. 云端接口 ================= */
+    var ADMIN_API  = (window.FRIDGE_API && FRIDGE_API.lock) || 'https://lock.fridge-cloud.top';
+    var adminToken = sessionStorage.getItem('sf_admin_tk') || '';
+    var USE_OFFLINE = false;            /* 连不上后端时切到本机演示数据 */
+
+    /* 云端数据缓存 */
+    var cloud = { orders: null, session: null, loaded: false };
+
+    /* 容错：后端字段偶尔给对象/字符串，统一转成数字，避免 NaN */
+    function toNum(v) {
+      var n = Number(v);
+      return isFinite(n) ? n : 0;
+    }
+
+    function fetchJson(method, path, body, tokenOverride) {
+      var ctrl  = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+
+      var headers = { 'Content-Type': 'application/json' };
+      var tk = (typeof tokenOverride === 'string') ? tokenOverride : adminToken;
+      if (tk) headers['X-Admin-Token'] = tk;
+
+      return fetch(ADMIN_API + path, {
+        method:  method,
+        headers: headers,
+        body:    body === undefined ? undefined : JSON.stringify(body),
+        signal:  ctrl.signal
+      })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error((data && data.message) || ('HTTP ' + res.status));
+          return data;
+        });
+      })
+      .finally(function () { clearTimeout(timer); });
+    }
+
+    /* 拉一次云端状态（池子 + 订单）；任何一步失败就保持离线演示 */
+    function refreshCloud(done) {
+      var pPool = fetchJson('GET', '/api/session')
+        .then(function (s) { cloud.session = s; })
+        .catch(function () { cloud.session = null; });
+
+      var pOrders = adminToken
+        ? fetchJson('GET', '/api/admin/orders')
+            .then(function (d) { cloud.orders = (d && d.orders) || []; })
+            .catch(function () { cloud.orders = null; })
+        : Promise.resolve();
+
+      Promise.all([pPool, pOrders]).then(function () {
+        cloud.loaded = true;
+        if (done) done();
+      });
+    }
+
+    /* 后端订单 → 面板结构（public_order 九个字段） */
+    function mapRealOrder(o) {
+      var created = (o.createdAt || 0) * 1000;
+      var ended   = (o.endedAt || 0) * 1000;
+
+      /* 计费起点：开门过就从缴押金/建单算起，没开过门不计费 */
+      var from    = ((o.depositedAt || 0) * 1000) || created;
+      var secs    = o.openCount > 0 && from
+                  ? Math.max(0, Math.floor(((ended || Date.now()) - from) / 1000))
+                  : 0;
+      var state   = o.status === 'closed' ? '已完成'
+                  : o.status === 'active' ? '使用中' : '待使用';
+
+      return {
+        realId:   o.orderId,
+        no:       o.orderId,
+        code:     o.grid || '—',
+        device:   o.deviceId || '—',
+        live:     o.status !== 'closed',
+        state:    state,
+        start:    created,
+        opened:   (o.lastOpenAt || 0) * 1000,
+        secs:     secs,
+        fee:      Math.round(secs / 3600 * 0.05 * 100) / 100,
+        category: o.category || ''
+      };
+    }
+
+    function currentOrders() {
+      if (cloud.orders && cloud.orders.length) return cloud.orders.map(mapRealOrder);
+      return loadOrders();
+    }
+
+    /* ================= 1. 登录（令牌走后端校验） ================= */
     var login    = document.getElementById('login');
     var loginPwd = document.getElementById('loginPwd');
+    var loginBtn = document.getElementById('loginBtn');
 
-    if (sessionStorage.getItem('sf_admin_ok') === '1') {
+    if (adminToken) {
+      login.hidden = true;
+      refreshCloud(renderOrders);
+    } else if (sessionStorage.getItem('sf_admin_ok') === '1') {
+      USE_OFFLINE = true;
+      cloud.loaded = true;
       login.hidden = true;
     }
 
-    document.getElementById('loginBtn').addEventListener('click', function () {
-      if (loginPwd.value.trim() !== 'admin') {
-        alert('口令不正确');
-        loginPwd.value = '';
-        loginPwd.focus();
-        return;
-      }
-      sessionStorage.setItem('sf_admin_ok', '1');
-      login.hidden = true;
+    loginBtn.addEventListener('click', function () {
+      var v = loginPwd.value.trim();
+      if (!v) { alert('请输入管理员令牌'); return; }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = '校验中...';
+
+      fetchJson('GET', '/api/admin/orders', undefined, v)
+        .then(function (d) {
+          adminToken = v;
+          sessionStorage.setItem('sf_admin_tk', v);
+          sessionStorage.removeItem('sf_admin_ok');
+          login.hidden = true;
+          cloud.orders = (d && d.orders) || [];
+          refreshCloud(renderOrders);
+        })
+        .catch(function (err) {
+          var msg = String((err && err.message) || err);
+
+          if (/401|令牌|token/i.test(msg)) {
+            alert('管理员令牌不正确');
+            loginPwd.value = '';
+            loginPwd.focus();
+            return;
+          }
+
+          if (window.confirm('连不上服务器（' + msg + '）。\n进入离线演示模式？演示数据只存在本机浏览器。')) {
+            USE_OFFLINE = true;
+            cloud.loaded = true;
+            sessionStorage.setItem('sf_admin_ok', '1');
+            login.hidden = true;
+            renderOrders();
+          }
+        })
+        .finally(function () {
+          loginBtn.disabled = false;
+          loginBtn.textContent = '进入后台';
+        });
     });
 
     loginPwd.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') document.getElementById('loginBtn').click();
+      if (e.key === 'Enter') loginBtn.click();
     });
 
     /* ================= 2. 订单数据（来自用户端 localStorage） ================= */
@@ -508,32 +631,67 @@
     var panelOrders = document.getElementById('panel-orders');
 
     function renderOrders() {
-      var orders = loadOrders();
+      var orders = currentOrders();
       var term   = getTerminated();
       var html   = '';
 
-      /* 密码池 */
-      var pool = Number(localStorage.getItem('sf_pwd_pool') || 1000);
-      var low  = pool < 300;
+      var s      = cloud.session;
+      var isReal = !!(cloud.orders && cloud.orders.length);
+
+      /* 数据来源提示 */
+      if (cloud.loaded && !isReal) {
+        html += '<p class="demo-note" style="margin:0 0 10px">' +
+          (s ? '已连上云端，暂无真实订单，下面显示本机演示单'
+             : '离线演示数据 · 未连上云端（' + ADMIN_API + '）') +
+          '</p>';
+      }
+
+      /* 密码池：可分配 / 设备持有（历史作废只作参考） */
+      var spare, held, assignedN, voidedN, total;
+
+      if (s) {
+        held      = toNum(s.issued);
+        assignedN = toNum(s.assigned);
+        voidedN   = toNum(s.voided);
+        spare     = Math.max(0, held - assignedN);
+        total     = (s.pool && toNum(s.pool.count)) || (toNum(s.available) + held);
+      } else {
+        spare     = toNum(localStorage.getItem('sf_pwd_pool')) || 100;
+        held      = spare;
+        assignedN = 0;
+        voidedN   = 0;
+        total     = spare;
+      }
+
+      var low = spare < 15;
 
       html += '<div class="stat">' +
         '<div>' +
-          '<p class="stat__label">一次性密码池余量</p>' +
-          '<p class="stat__value' + (low ? ' is-low' : '') + '">' + pool + ' / 1000</p>' +
+          '<p class="stat__label">' + (s ? '应急密码池　可分配 / 设备持有' : '演示密码池余量') + '</p>' +
+          '<p class="stat__value' + (low ? ' is-low' : '') + '">' +
+            spare + ' / ' + held +
+            '<span style="font-size:13px;color:#8A8A8A;font-weight:400">　共 ' + total + '</span>' +
+          '</p>' +
+          (s
+            ? '<p style="font-size:11px;color:#8A8A8A;margin-top:6px;font-weight:300">' +
+                '本批已分配 ' + assignedN + ' · 历史作废 ' + voidedN + '（累计）</p>'
+            : '') +
         '</div>' +
-        '<button class="stat__action" type="button" id="refillBtn">模拟补卡</button>' +
+        '<button class="stat__action" type="button" id="refillBtn">' +
+          (s ? '立即补池' : '模拟补卡') +
+        '</button>' +
       '</div>';
 
-      /* 一次性应急码：管理员生成后告知用户 */
+      /* 一次性应急码 */
       var emergency = null;
       try { emergency = JSON.parse(localStorage.getItem('sf_emergency_code') || 'null'); } catch (e) {}
 
       html += '<div class="stat">' +
         '<div>' +
-          '<p class="stat__label">一次性应急码</p>' +
-          '<p class="stat__value">' + (emergency ? emergency.code : '—') + '</p>' +
+          '<p class="stat__label">应急码申领</p>' +
+          '<p class="stat__value">' + (s ? '云端下发' : (emergency ? emergency.code : '—')) + '</p>' +
         '</div>' +
-        '<button class="stat__action" type="button" id="genCodeBtn">生成</button>' +
+        '<button class="stat__action" type="button" id="genCodeBtn">' + (s ? '说明' : '生成') + '</button>' +
       '</div>';
 
       /* 异常告警 + 用户举报 */
@@ -588,7 +746,9 @@
               '<span class="order__state ' + stateCls + '">' + stateText + '</span>' +
             '</div>' +
             '<p class="order__meta">格口 ' + o.code +
-              '<br>开锁 ' + (o.start ? hm(o.start) : '—') +
+              (o.device ? '　设备 ' + o.device : '') +
+              '<br>下单 ' + (o.start ? hm(o.start) : '—') +
+              (o.opened ? '　最近开锁 ' + hm(o.opened) : '') +
               '　时长 ' + dur(o.secs) +
               (o.fee ? '　费用 ¥ ' + Number(o.fee).toFixed(2) : '') +
             '</p>';
@@ -603,17 +763,55 @@
 
       panelOrders.innerHTML = html;
 
-      /* 补卡 */
+      /* 补池：云端调 pool/seed，离线只动本地演示数字 */
       document.getElementById('refillBtn').addEventListener('click', function () {
-        localStorage.setItem('sf_pwd_pool', '1000');
-        renderOrders();
+        var btn = this;
+
+        if (!s) {
+          localStorage.setItem('sf_pwd_pool', '100');
+          renderOrders();
+          return;
+        }
+
+        if (!window.confirm('向门锁下发新一批 100 个 5 位码？\n旧的码会全部作废。')) return;
+
+        btn.disabled = true;
+        btn.textContent = '下发中...';
+
+        fetchJson('POST', '/api/admin/pool/seed', {})
+          .then(function (r) {
+            var n = Number(r.count || 0);
+            if (n >= 100) {
+              alert('批次 ' + (r.batch || '—') + ' 已生成 ' + n + ' 个新码。\n' +
+                    '设备上线后才会同步生效，之前下发的码全部作废。');
+            } else {
+              alert('生成数量异常：只生成了 ' + n + ' 个（应为 100），请让后端检查码池。');
+            }
+          })
+          .catch(function (err) {
+            var msg = String((err && err.message) || err);
+            if (/pool_empty|503|已空/.test(msg)) {
+              alert('补池失败：云端可用池已空。\n后端 seed 只搬运旧码、不生成新码（已知问题），需要队友补上生成逻辑。');
+            } else {
+              alert('补池失败：' + msg);
+            }
+          })
+          .finally(function () {
+            btn.disabled = false;
+            btn.textContent = '立即补池';
+            refreshCloud(renderOrders);
+          });
       });
 
-      /* 生成一次性应急码 */
+      /* 应急码：云端时代替为说明，离线时生成 5 位演示码 */
       var genBtn = document.getElementById('genCodeBtn');
       if (genBtn) {
         genBtn.addEventListener('click', function () {
-          var code = String(Math.floor(1000 + Math.random() * 9000));
+          if (s) {
+            alert('应急码由用户在“蓝牙打不开”时向云端申领，后台不手动生成。\n申领记录需后端开放查询接口后再展示。');
+            return;
+          }
+          var code = String(Math.floor(10000 + Math.random() * 90000));
           try {
             localStorage.setItem('sf_emergency_code', JSON.stringify({ code: code, at: Date.now() }));
           } catch (e) {}
@@ -636,6 +834,12 @@
             }));
           } catch (e) {}
 
+          /* 真实订单：云端同步结束，设备侧不再允许开门 */
+          if (o.realId) {
+            fetchJson('POST', '/api/order/' + encodeURIComponent(o.realId) + '/end', {})
+              .catch(function () {});
+          }
+
           renderOrders();
         });
       });
@@ -646,7 +850,7 @@
       var el = document.getElementById('overview');
       if (!el) return;
 
-      var orders = loadOrders();
+      var orders = currentOrders();
 
       /* 物品 TOP3 */
       var cat = {};

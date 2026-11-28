@@ -131,6 +131,43 @@
     font-weight: 300;
     line-height: 1;
     color: #A9AEB6;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* 云端下发的一次性密码展示 */
+  .pwd-cloud {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 202px;
+    text-align: center;
+  }
+
+  .pwd-cloud__label {
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1;
+    color: #A9AEB6;
+    margin-bottom: 9px;
+  }
+
+  .pwd-cloud__code {
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 8px;
+    color: var(--brand);
+    text-indent: 8px;              /* 抵消最后一个字符的字距，保持视觉居中 */
+  }
+
+  .pwd-cloud__note {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: #6E7378;
   }
 
   /* ============ 主按钮 ============ */
@@ -235,9 +272,14 @@
 
     <!-- 密码开锁（默认隐藏） -->
     <div id="pwdGroup" hidden>
+      <div class="pwd-cloud" id="pwdCloud" hidden>
+        <p class="pwd-cloud__label">云端下发的一次性密码</p>
+        <p class="pwd-cloud__code" id="pwdCloudCode">—</p>
+        <p class="pwd-cloud__note">在门锁键盘上输入这 5 位，按 # 确认</p>
+      </div>
       <input class="pwd-input" id="pwdInput" type="text" inputmode="numeric"
-             autocomplete="off" maxlength="4" placeholder="请输入 4 位一次性密码">
-      <p class="pwd-hint">没收到密码？请联系管理员获取</p>
+             autocomplete="off" maxlength="5" placeholder="请输入 5 位一次性密码">
+      <p class="pwd-hint" id="pwdHint">点击此处向云端申领一次性密码</p>
       <button class="main-btn" type="button" id="pwdBtn">确认开锁</button>
     </div>
 
@@ -288,21 +330,122 @@
       orderNo = today + '001';
     }
 
-    document.getElementById('orderNo').textContent = orderNo;
+    /* 有真实订单时优先显示云端订单号，方便管理员按号核对 */
+    var realId = '';
+    try { realId = localStorage.getItem('sf_real_order') || ''; } catch (e) {}
+
+    document.getElementById('orderNo').textContent = realId || orderNo;
 
     /* ---------------- 交互 ---------------- */
-    var bleGroup  = document.getElementById('bleGroup');
-    var pwdGroup  = document.getElementById('pwdGroup');
-    var pwdLink   = document.getElementById('pwdLink');
-    var pwdInput  = document.getElementById('pwdInput');
-    var toast     = document.getElementById('toast');
-    var toastText = document.getElementById('toastText');
-    var spinner   = document.getElementById('toastSpinner');
+    var bleGroup     = document.getElementById('bleGroup');
+    var pwdGroup     = document.getElementById('pwdGroup');
+    var pwdLink      = document.getElementById('pwdLink');
+    var pwdInput     = document.getElementById('pwdInput');
+    var pwdHint      = document.getElementById('pwdHint');
+    var pwdCloud     = document.getElementById('pwdCloud');
+    var pwdCloudCode = document.getElementById('pwdCloudCode');
+    var toast        = document.getElementById('toast');
+    var toastText    = document.getElementById('toastText');
+    var spinner      = document.getElementById('toastSpinner');
+
+    /* ---------------- 一次性密码：向云端申领 ---------------- */
+    var cloudCode  = '';            /* 云端下发的 5 位码 */
+    var requesting = false;
+    var cloudTried = false;
+
+    function setHint(text, isError) {
+      pwdHint.textContent = text;
+      pwdHint.style.color = isError ? '#C0392B' : '#A9AEB6';
+    }
+
+    /* 本机暂存：刷新页面后仍能看到自己这单的码 */
+    function cacheKey(orderId) { return 'sf_emg_' + orderId; }
+
+    function readCachedCode(orderId) {
+      try {
+        var raw = localStorage.getItem(cacheKey(orderId));
+        if (!raw) return '';
+        var o = JSON.parse(raw);
+        return (o && o.code) ? String(o.code) : '';
+      } catch (e) { return ''; }
+    }
+
+    function saveCachedCode(orderId, code) {
+      try {
+        localStorage.setItem(cacheKey(orderId), JSON.stringify({ code: code, at: Date.now() }));
+      } catch (e) {}
+    }
+
+    function showCloudCode(code, hintText) {
+      cloudCode = code;
+      pwdCloudCode.textContent = code || '—';
+      pwdCloud.hidden = !code;
+      setHint(hintText || '密码已下发，输入后点「确认开锁」');
+    }
+
+    function requestEmergency(force) {
+      if (requesting) return;
+      if (cloudTried && !force) return;
+
+      var orderId = '';
+      try { orderId = localStorage.getItem('sf_real_order') || ''; } catch (e) {}
+
+      /* 没有真实订单（离线演示 / 建单失败）：沿用本地演示码 */
+      if (!orderId) {
+        cloudTried = true;
+        setHint('离线模式：请联系管理员获取一次性密码');
+        return;
+      }
+
+      /* 本单已经领过：直接显示，不重复占用卡池 */
+      var cached = readCachedCode(orderId);
+      if (cached) {
+        cloudTried = true;
+        showCloudCode(cached, '本单已申领过，这是刚才下发的密码');
+        return;
+      }
+
+      requesting = true;
+      setHint('正在向云端申领…');
+
+      api('POST', '/api/emergency/request', { orderId: orderId })
+        .then(function (d) {
+          var code = String(d.code || '');
+          if (code) saveCachedCode(orderId, code);
+          showCloudCode(code, '密码已下发，输入后点「确认开锁」');
+        })
+        .catch(function (err) {
+          var msg = String((err && err.message) || err);
+
+          if (/404|order_not_found|订单不存在/.test(msg)) {
+            setHint('云端找不到这个订单，请联系管理员', true);
+          } else if (/403|order_inactive|不可用/.test(msg)) {
+            setHint('这单未缴费或已结束，不能申领密码', true);
+          } else if (/409|already_requested|申请过/.test(msg)) {
+            var old = readCachedCode(orderId);
+            if (old) showCloudCode(old, '本单已申领过，这是刚才下发的密码');
+            else setHint('本单已申领过密码，本机没有记录，请联系管理员', true);
+          } else if (/503|device_pool_empty|补池/.test(msg)) {
+            setHint('云端备用码已用完，请联系管理员补池', true);
+          } else {
+            setHint('连不上云端，请联系管理员获取密码', true);
+          }
+        })
+        .finally(function () {
+          requesting = false;
+          cloudTried = true;
+        });
+    }
 
     pwdLink.addEventListener('click', function () {
       bleGroup.hidden = true;
       pwdGroup.hidden = false;
+      requestEmergency(false);
       pwdInput.focus();
+    });
+
+    pwdHint.addEventListener('click', function () {
+      requestEmergency(true);
     });
 
     var API = FRIDGE_API.lock;
@@ -380,13 +523,24 @@
     document.getElementById('pwdBtn').addEventListener('click', function (e) {
       var code = pwdInput.value.trim();
 
-      /* 只接受 4 位数字 */
-      if (!/^\d{4}$/.test(code)) {
-        alert('请输入 4 位数字密码');
+      /* 只接受 5 位数字（与云端卡池一致） */
+      if (!/^\d{5}$/.test(code)) {
+        alert('请输入 5 位数字密码');
         return;
       }
 
-      /* 与管理员生成的应急码比对 */
+      /* 云端已下发：与云端返回的码比对 */
+      if (cloudCode) {
+        if (code !== cloudCode) {
+          alert('密码不正确，请核对云端下发的 5 位密码');
+          return;
+        }
+        e.currentTarget.disabled = true;
+        runUnlock();
+        return;
+      }
+
+      /* 离线演示：与管理员在本机生成的演示码比对 */
       var saved = null;
       try { saved = JSON.parse(localStorage.getItem('sf_emergency_code') || 'null'); } catch (err) {}
 

@@ -240,7 +240,8 @@
       paidToast.hidden = false;
 
       /* 真实建单 + 缴押金；失败只打印，不影响流程 */
-      var real = api('POST', '/api/order/create', {})
+      var gridCode = localStorage.getItem('selectedGrid') || '';
+      var real = api('POST', '/api/order/create', { grid: gridCode })
         .then(function (o) {
           return api('POST', '/api/order/' + o.orderId + '/deposit', {})
             .then(function () {

@@ -372,6 +372,13 @@
           localStorage.removeItem('selectedGrid');
           localStorage.removeItem('sf_terminated');
           localStorage.removeItem('sf_pending_pay');
+
+          /* 一并清掉本单暂存的应急码 */
+          try {
+            var rid = localStorage.getItem('sf_real_order');
+            if (rid) localStorage.removeItem('sf_emg_' + rid);
+          } catch (e) {}
+
           localStorage.removeItem('sf_real_order');
         } catch (e) {}
         window.location.href = 'index.html';
